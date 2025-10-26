@@ -1,5 +1,5 @@
--- HookLoader.lua
 local Logger
+
 pcall(function()
     local Console = require(game.ReplicatedStorage.Packages.Console)
     Logger = Console.New("HookLoader")
@@ -7,12 +7,11 @@ end)
 
 local Loader = {}
 
--- Internal state
+
 local Folders = {}
 local Debug = false
-local GlobalTable = getgenv() -- default
+local GlobalTable = getgenv()
 
--- Public API
 Loader.Debug = function(State)
     Debug = State and true or false
 end
@@ -28,6 +27,7 @@ Loader.Global = function(Table)
 end
 
 local function Safe(Module)
+    setthreadidentity(2)
     local Ok, Result = pcall(require, Module)
     if not Ok then
         if Debug then
@@ -43,6 +43,7 @@ local function Safe(Module)
         return {}
     end
     return Result
+    setthreadidentity(7)
 end
 
 Loader.Load = function()
@@ -62,7 +63,6 @@ Loader.Load = function()
         end
     end
 
-    -- Write modules to global table
     for Key, Val in pairs(Mods) do
         GlobalTable[Key] = Val
     end
@@ -76,15 +76,13 @@ Loader.Load = function()
     return Mods
 end
 
--- Call a function with optional bypassHook flag
 Loader.Call = function(ModuleKey, FunctionName, ...)
     local Args = {...}
     local BypassHook = false
 
-    -- Check if last argument is a special table {BypassHook = true}
     if #Args > 0 and type(Args[#Args]) == "table" and Args[#Args].BypassHook then
         BypassHook = true
-        table.remove(Args, #Args) -- remove flag from args
+        table.remove(Args, #Args)
     end
 
     local Mod = GlobalTable[ModuleKey]
@@ -105,10 +103,9 @@ Loader.Call = function(ModuleKey, FunctionName, ...)
         return nil
     end
 
-    return Func(table.unpack(Args)) -- forward all args
+    return Func(table.unpack(Args))
 end
 
--- Hook a function using hookfunction
 Loader.Hook = function(ModuleKey, FunctionName, HookFunc)
     local Mod = GlobalTable[ModuleKey]
     if not Mod then
@@ -122,7 +119,6 @@ Loader.Hook = function(ModuleKey, FunctionName, HookFunc)
         return nil
     end
 
-    -- Store original function
     Mod._OriginalFunctions = Mod._OriginalFunctions or {}
     Mod._OriginalFunctions[FunctionName] = OrigFunc
 
@@ -142,7 +138,6 @@ Loader.Hook = function(ModuleKey, FunctionName, HookFunc)
     return Hooked
 end
 
--- Register globally
 GlobalTable.HookLoader = Loader
 
 return Loader
