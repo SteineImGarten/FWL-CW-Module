@@ -74,19 +74,33 @@ Loader.Load = function()
 end
 
 Loader.Call = function(ModuleKey, FunctionName, ...)
+    local Args = {...}
+    local BypassHook = false
+
+    if #Args > 0 and type(Args[#Args]) == "table" and Args[#Args].BypassHook then
+        BypassHook = true
+        table.remove(Args, #Args)
+    end
+
     local Mod = GlobalTable[ModuleKey]
     if not Mod then
         warn(("Module %s not found"):format(ModuleKey))
         return nil
     end
 
-    local Func = Mod[FunctionName]
+    local Func
+    if BypassHook and Mod._OriginalFunctions and Mod._OriginalFunctions[FunctionName] then
+        Func = Mod._OriginalFunctions[FunctionName]
+    else
+        Func = Mod[FunctionName]
+    end
+
     if typeof(Func) ~= "function" then
         warn(("Function %s not found in module %s"):format(FunctionName, ModuleKey))
         return nil
     end
 
-    return Func(...)
+    return Func(table.unpack(Args))
 end
 
 Loader.Hook = function(ModuleKey, FunctionName, HookFunc)
@@ -101,6 +115,9 @@ Loader.Hook = function(ModuleKey, FunctionName, HookFunc)
         warn(("Function %s not found in module %s"):format(FunctionName, ModuleKey))
         return nil
     end
+
+    Mod._OriginalFunctions = Mod._OriginalFunctions or {}
+    Mod._OriginalFunctions[FunctionName] = OrigFunc
 
     local Success, Hooked = pcall(function()
         return hookfunction(OrigFunc, HookFunc)
@@ -118,7 +135,7 @@ Loader.Hook = function(ModuleKey, FunctionName, HookFunc)
     return Hooked
 end
 
+
 GlobalTable.HookLoader = Loader
 
 return Loader
-
