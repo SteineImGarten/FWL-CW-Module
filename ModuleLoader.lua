@@ -1,14 +1,4 @@
-local Logger
-
-pcall(function()
-    setthreadidentity(2)
-    local Console = require(game.ReplicatedStorage.Packages.Console)
-    Logger = Console.New("HookLoader")
-    setthreadidentity(7)
-end)
-
 local Loader = {}
-
 
 local Folders = {}
 local Debug = false
@@ -30,6 +20,7 @@ end
 
 local function Safe(Module)
     setthreadidentity(2)
+    
     local Ok, Result = pcall(require, Module)
     if not Ok then
         if Debug then
@@ -50,6 +41,8 @@ local function Safe(Module)
 end
 
 Loader.Load = function()
+    setthreadidentity(2)
+    
     local Mods = {}
     for _, Folder in ipairs(Folders) do
         for _, Module in ipairs(Folder:GetDescendants()) do
@@ -75,11 +68,14 @@ Loader.Load = function()
         for _ in pairs(Mods) do Count = Count + 1 end
         print("Total modules loaded:", Count)
     end
-
+    
+    setthreadidentity(7)
     return Mods
 end
 
 Loader.Call = function(ModuleKey, FunctionName, ...)
+    setthreadidentity(2)
+    
     local Args = {...}
     local BypassHook = false
 
@@ -105,11 +101,14 @@ Loader.Call = function(ModuleKey, FunctionName, ...)
         warn(("Function %s not found in module %s"):format(FunctionName, ModuleKey))
         return nil
     end
-
+    
+    setthreadidentity(2)
     return Func(table.unpack(Args))
 end
 
 Loader.Hook = function(ModuleKey, FunctionName, HookFunc)
+    setthreadidentity(2)
+    
     local Mod = GlobalTable[ModuleKey]
     if not Mod then
         warn(("Module %s not found"):format(ModuleKey))
@@ -137,7 +136,8 @@ Loader.Hook = function(ModuleKey, FunctionName, HookFunc)
     if Debug then
         print(("Hooked %s in module %s"):format(FunctionName, ModuleKey))
     end
-
+    
+    setthreadidentity(7)
     return Hooked
 end
 
