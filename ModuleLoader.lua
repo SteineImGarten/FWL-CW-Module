@@ -123,13 +123,14 @@ Loader.Hook = function(ModuleKey, FunctionName, HookFunc)
 
     Mod._OriginalFunctions = Mod._OriginalFunctions or {}
     Mod._OriginalFunctions[FunctionName] = OrigFunc
+    local TrueOriginal = OrigFunc
 
     local function WrappedHook(...)
-        return HookFunc(OrigFunc, ...)
+        return HookFunc(TrueOriginal, ...)
     end
 
     local Success, Err = pcall(function()
-        hookfunction(OrigFunc, WrappedHook)
+        hookfunction(TrueOriginal, WrappedHook)
     end)
 
     if not Success then
@@ -142,7 +143,7 @@ Loader.Hook = function(ModuleKey, FunctionName, HookFunc)
     end
 
     setthreadidentity(7)
-    return OrigFunc
+    return TrueOriginal
 end
 
 GlobalTable.HookLoader = Loader
