@@ -124,7 +124,6 @@ Loader.Hook = function(ModuleKey, FunctionName, HookFunc)
     Mod._OriginalFunctions = Mod._OriginalFunctions or {}
     Mod._OriginalFunctions[FunctionName] = OrigFunc
 
-    -- Replace the reference instead of hookfunction()
     Mod[FunctionName] = function(...)
         return HookFunc(OrigFunc, ...)
     end
