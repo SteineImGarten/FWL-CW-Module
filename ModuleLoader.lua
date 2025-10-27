@@ -225,6 +225,41 @@ Loader.ViewHookIDs = function(ModuleKey, FunctionName)
     end
 end
 
+Loader.ShowFunc = function(FuncName)
+    if type(FuncName) ~= "string" then
+        warn("ShowFunc requires a string argument")
+        return {}
+    end
+
+    local Results = {}
+    local Searched = 0
+
+    for Key, Mod in pairs(GlobalTable) do
+        if type(Key) == "string" and Key:sub(1, 1) == "@" then
+            Searched += 1
+
+            local Ok, HasFunc = pcall(function()
+                return type(Mod) == "table" and typeof(Mod[FuncName]) == "function"
+            end)
+
+            if Ok and HasFunc then
+                table.insert(Results, Key)
+            end
+        end
+    end
+
+    if #Results == 0 then
+        print(("[Loader] No modules contain a function named '%s' (searched %d modules)"):format(FuncName, Searched))
+    else
+        print(("[Loader] Found function '%s' in %d module(s):"):format(FuncName, #Results))
+        for _, ModKey in ipairs(Results) do
+            print("  →", ModKey)
+        end
+    end
+
+    return Results
+end
+
 GlobalTable.HookLoader = Loader
 
 return Loader
