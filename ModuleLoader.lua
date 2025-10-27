@@ -124,10 +124,8 @@ Loader.Hook = function(ModuleKey, FunctionName, HookFunc)
     Mod._OriginalFunctions = Mod._OriginalFunctions or {}
     Mod._OriginalFunctions[FunctionName] = OrigFunc
 
-    -- Wrap the user hook so it always gets Original as the first arg
     local function WrappedHook(...)
-        local Args = {...}
-        return HookFunc(OrigFunc, table.unpack(Args))
+        return HookFunc(OrigFunc, ...)
     end
 
     local Success, Err = pcall(function()
