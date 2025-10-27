@@ -119,8 +119,11 @@ Loader.Call = function(ModuleKey, FunctionName, ...)
         return nil
     end
 
-    setthreadidentity(2)
-    return Func(table.unpack(Args))
+    if #Args > 0 and type(Args[1]) == "table" then
+        return Func(table.unpack(Args))
+    else
+        return Func(Mod, table.unpack(Args))
+    end
 end
 
 Loader.Hook = function(ModuleKey, FunctionName, HookID, HookFunc, Config)
