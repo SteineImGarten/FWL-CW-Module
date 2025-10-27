@@ -1,9 +1,27 @@
+local GlobalTable = getgenv()
+GlobalTable._LoaderCache = GlobalTable._LoaderCache or {}
+
+local function CompareFolderLists(a, b)
+    if #a ~= #b then return false end
+    for i = 1, #a do
+        if a[i] ~= b[i] then
+            return false
+        end
+    end
+    return true
+end
+
+for _, CacheEntry in ipairs(GlobalTable._LoaderCache) do
+    if CompareFolderLists(CacheEntry.Folders, script.Parent and CacheEntry.Folders or {}) then
+        return CacheEntry.Loader
+    end
+end
+
 local Loader = {}
 
 local Folders = {}
 local Debug = false
-local GlobalTable = getgenv()
-
+GlobalTable = getgenv()
 GlobalTable._HookRegistry = GlobalTable._HookRegistry or {}
 
 Loader.Debug = function(State)
@@ -193,6 +211,7 @@ Loader.Unhook = function(ModuleKey, FunctionName, HookID)
     if ActiveHook then
         local Original = Mod._OriginalFunctions[FunctionName]
         Mod[FunctionName] = function(...)
+
             return ActiveHook(Original, ...)
         end
     else
@@ -261,5 +280,7 @@ Loader.ShowFunc = function(FuncName)
 end
 
 GlobalTable.HookLoader = Loader
+
+table.insert(GlobalTable._LoaderCache, {Folders = Folders, Loader = Loader})
 
 return Loader
