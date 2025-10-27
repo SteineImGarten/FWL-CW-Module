@@ -123,27 +123,18 @@ Loader.Hook = function(ModuleKey, FunctionName, HookFunc)
 
     Mod._OriginalFunctions = Mod._OriginalFunctions or {}
     Mod._OriginalFunctions[FunctionName] = OrigFunc
-    local TrueOriginal = OrigFunc
 
-    local function WrappedHook(...)
-        return HookFunc(TrueOriginal, ...)
-    end
-
-    local Success, Err = pcall(function()
-        hookfunction(TrueOriginal, WrappedHook)
-    end)
-
-    if not Success then
-        warn(("Failed to hook %s in module %s: %s"):format(FunctionName, ModuleKey, tostring(Err)))
-        return nil
+    -- Replace the reference instead of hookfunction()
+    Mod[FunctionName] = function(...)
+        return HookFunc(OrigFunc, ...)
     end
 
     if Debug then
-        print(("Hooked %s in module %s"):format(FunctionName, ModuleKey))
+        print(("Hooked %s in module %s (table override)"):format(FunctionName, ModuleKey))
     end
 
     setthreadidentity(7)
-    return TrueOriginal
+    return OrigFunc
 end
 
 GlobalTable.HookLoader = Loader
