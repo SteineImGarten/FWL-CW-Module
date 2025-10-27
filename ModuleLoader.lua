@@ -42,8 +42,9 @@ local function Safe(Module)
     if typeof(Result) ~= "table" then
         return {}
     end
-    return Result
+
     setthreadidentity(7)
+    return Result
 end
 
 Loader.Load = function()
