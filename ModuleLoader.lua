@@ -108,7 +108,7 @@ end
 
 Loader.Hook = function(ModuleKey, FunctionName, HookFunc)
     setthreadidentity(2)
-    
+
     local Mod = GlobalTable[ModuleKey]
     if not Mod then
         warn(("Module %s not found"):format(ModuleKey))
@@ -124,21 +124,27 @@ Loader.Hook = function(ModuleKey, FunctionName, HookFunc)
     Mod._OriginalFunctions = Mod._OriginalFunctions or {}
     Mod._OriginalFunctions[FunctionName] = OrigFunc
 
-    local Success, Hooked = pcall(function()
-        return hookfunction(OrigFunc, HookFunc)
+    -- Wrap the user hook so it always gets Original as the first arg
+    local function WrappedHook(...)
+        local Args = {...}
+        return HookFunc(OrigFunc, table.unpack(Args))
+    end
+
+    local Success, Err = pcall(function()
+        hookfunction(OrigFunc, WrappedHook)
     end)
 
     if not Success then
-        warn(("Failed to hook %s in module %s: %s"):format(FunctionName, ModuleKey, tostring(Hooked)))
+        warn(("Failed to hook %s in module %s: %s"):format(FunctionName, ModuleKey, tostring(Err)))
         return nil
     end
 
     if Debug then
         print(("Hooked %s in module %s"):format(FunctionName, ModuleKey))
     end
-    
+
     setthreadidentity(7)
-    return Hooked
+    return OrigFunc
 end
 
 GlobalTable.HookLoader = Loader
