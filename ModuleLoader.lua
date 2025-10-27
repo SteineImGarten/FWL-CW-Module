@@ -1,8 +1,10 @@
 local Logger
 
 pcall(function()
+    setthreadidentity(2)
     local Console = require(game.ReplicatedStorage.Packages.Console)
     Logger = Console.New("HookLoader")
+    setthreadidentity(7)
 end)
 
 local Loader = {}
