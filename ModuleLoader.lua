@@ -283,7 +283,7 @@ Loader.Hook = function(ModuleKey, FunctionName, HookID, HookFunc, Config)
 
             PrintReturn(Ret)
 
-            if CustomRet ~= nil and CFG.Overridereturn then
+            if CustomRet ~= nil and CFG.OverrideReturn then
                 return CustomRet
             end
 
