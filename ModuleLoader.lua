@@ -1,6 +1,10 @@
 local GlobalTable = getgenv()
 GlobalTable._LoaderCache = GlobalTable._LoaderCache or {}
 
+local function SetThread(Val)
+    setthreadidentity(Val)
+end
+
 local function CompareFolderLists(a, b)
     if #a ~= #b then return false end
     for i = 1, #a do
@@ -40,7 +44,7 @@ Loader.Global = function(Table)
 end
 
 local function Safe(Module)
-    setthreadidentity(2)
+    SetThread(2)
 
     local Ok, Result = pcall(require, Module)
     if not Ok then
@@ -53,12 +57,90 @@ local function Safe(Module)
         return {}
     end
 
-    setthreadidentity(7)
+    SetThread(7)
     return Result
 end
 
+local function Format(Value, Depth, Seen)
+    Depth = Depth or 0
+    Seen = Seen or {}
+    local Indent = string.rep("  ", Depth)
+    local t = typeof(Value)
+    if t == "string" then
+        return ("\"%s\""):format(Value:gsub("\n","\\n"))
+    elseif t == "number" or t == "boolean" or t == "nil" then
+        return tostring(Value)
+    elseif t == "table" then
+        if Seen[Value] then
+            return "<cycle>"
+        end
+        Seen[Value] = true
+        local Parts = {}
+        local IsArray = true
+        local MaxIndex = 0
+        for k, _ in pairs(Value) do
+            if type(k) ~= "number" then
+                IsArray = false
+                break
+            else
+                if k > MaxIndex then MaxIndex = k end
+            end
+        end
+        if IsArray and MaxIndex > 0 then
+            
+            table.insert(Parts, "[")
+            
+            for i = 1, MaxIndex do
+                local v = Value[i]
+                table.insert(Parts, ("\n%s  %s,"):format(Indent, Format(v, Depth+1, Seen)))
+            end
+            
+            table.insert(Parts, ("\n%s]"):format(Indent))
+            
+            return table.concat(Parts, "")
+        else
+            table.insert(Parts, "{")
+            for k, v in pairs(Value) do
+                local KeySTR = tostring(k)
+                local ValSTR = Format(v, Depth+1, Seen)
+                table.insert(Parts, ("\n%s  %s = %s,"):format(Indent, KeySTR, ValSTR))
+            end
+            
+            table.insert(Parts, ("\n%s}"):format(Indent))
+            
+            return table.concat(Parts, "")
+        end
+    else
+        return tostring(Value)
+    end
+end
+
+local function PrintArgs(Args)
+    for i = 1, #Args do
+        local v = Args[i]
+        local t = typeof(v)
+        if t == "table" then
+            print(("Arg%d: %s = %s"):format(i, "table", Format(v, 0, {})))
+        else
+            if t == "string" then
+                print(("Arg%d: %s = %s"):format(i, t, Format(v)))
+            else
+                print(("Arg%d: %s = %s"):format(i, t, Format(v)))
+            end
+        end
+    end
+end
+
+local function PrintReturn(Ret)
+    if type(Ret) == "table" or typeof(Ret) == "table" then
+        print(("return: %s"):format(Format(Ret, 0, {})))
+    else
+        print(("return: %s"):format(Format(Ret)))
+    end
+end
+
 Loader.Load = function()
-    setthreadidentity(2)
+    SetThread(2)
 
     local Mods = {}
     for _, Folder in ipairs(Folders) do
@@ -86,12 +168,12 @@ Loader.Load = function()
         print("Total modules loaded:", Count)
     end
 
-    setthreadidentity(7)
+    SetThread(7)
     return Mods
 end
 
 Loader.Call = function(ModuleKey, FunctionName, ...)
-    setthreadidentity(2)
+    SetThread(2)
 
     local Args = {...}
     local BypassHook = false
@@ -99,6 +181,10 @@ Loader.Call = function(ModuleKey, FunctionName, ...)
     if #Args > 0 and type(Args[#Args]) == "table" and Args[#Args].BypassHook then
         BypassHook = true
         table.remove(Args, #Args)
+        
+        if Debug or true then
+            PrintArgs(Args)
+        end
     end
 
     local Mod = GlobalTable[ModuleKey]
@@ -119,7 +205,7 @@ Loader.Call = function(ModuleKey, FunctionName, ...)
         return nil
     end
 
-    setthreadidentity(2)
+    SetThread(2)
     return Func(table.unpack(Args))
 end
 
@@ -131,7 +217,7 @@ Loader.Hook = function(ModuleKey, FunctionName, HookID, HookFunc, Config)
 
     Config = Config or {}
 
-    setthreadidentity(2)
+    SetThread(2)
     local Mod = GlobalTable[ModuleKey]
     if not Mod then
         warn(("Module %s not found"):format(ModuleKey))
@@ -171,8 +257,41 @@ Loader.Hook = function(ModuleKey, FunctionName, HookID, HookFunc, Config)
             end
         end
         local Original = Mod._OriginalFunctions[FunctionName]
-        if ActiveHookData then
-            return ActiveHookData.Func(Original, ...)
+
+        if not ActiveHookData then
+            return Original(...)
+        end
+
+        local CFG = ActiveHookData.Config or {}
+        local HookFn = ActiveHookData.Func
+
+        if CFG.Spy then
+            local Args = {...}
+            print(("--- Spy Hook: %s -> %s [ID=%s] ---"):format(ModuleKey, FunctionName, HookID))
+            PrintArgs(Args)
+
+            local Ok, CustomRet
+            if type(HookFn) == "function" then
+                Ok, CustomRet = pcall(HookFn, Original, table.unpack(Args))
+                if not Ok then
+                    warn(("Spy-hook function error on %s -> %s: %s"):format(ModuleKey, FunctionName, tostring(CustomRet)))
+                    CustomRet = nil
+                end
+            end
+
+            local Ret = Original(table.unpack(Args))
+
+            PrintReturn(Ret)
+
+            if CustomRet ~= nil and CFG.Overridereturn then
+                return CustomRet
+            end
+
+            return Ret
+        end
+
+        if type(HookFn) == "function" then
+            return HookFn(Original, ...)
         else
             return Original(...)
         end
@@ -184,11 +303,11 @@ Loader.Hook = function(ModuleKey, FunctionName, HookID, HookFunc, Config)
         print(("Hook applied: %s -> %s [ID=%s, Active]"):format(ModuleKey, FunctionName, HookID))
     end
 
-    setthreadidentity(7)
+    SetThread(7)
     return OrigFunc
 end
 
-Loader.Unhook = function(ModuleKey, FunctionName, HookID)
+Loader.UnHook = function(ModuleKey, FunctionName, HookID)
     local Mod = GlobalTable[ModuleKey]
     if not Mod or not GlobalTable._HookRegistry[ModuleKey] or not GlobalTable._HookRegistry[ModuleKey][FunctionName] then
         return
@@ -231,16 +350,16 @@ Loader.ViewHookIDs = function(ModuleKey, FunctionName)
 
     print(("Hooks for %s -> %s:"):format(ModuleKey, FunctionName))
     for HookID, Data in pairs(GlobalTable._HookRegistry[ModuleKey][FunctionName]) do
-        local status = Data.Active and "ACTIVE" or "INACTIVE"
-        local configStr = ""
+        local Status = Data.Active and "ACTIVE" or "INACTIVE"
+        local ConfigSTR = ""
         if Data.Config and next(Data.Config) then
-            local parts = {}
+            local Parts = {}
             for k, v in pairs(Data.Config) do
-                table.insert(parts, ("%s -> %s"):format(k, tostring(v)))
+                table.insert(Parts, ("%s -> %s"):format(k, tostring(v)))
             end
-            configStr = " | Modifies: " .. table.concat(parts, ", ")
+            ConfigSTR = " | Modifies: " .. table.concat(Parts, ", ")
         end
-        print(("  ID: %s [%s]%s"):format(HookID, status, configStr))
+        print(("  ID: %s [%s]%s"):format(HookID, Status, ConfigSTR))
     end
 end
 
