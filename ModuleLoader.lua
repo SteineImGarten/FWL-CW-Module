@@ -44,7 +44,6 @@ Loader.Global = function(Table)
 end
 
 local function Safe(Module)
-    SetThread(2)
 
     local Ok, Result = pcall(require, Module)
     if not Ok then
@@ -57,7 +56,6 @@ local function Safe(Module)
         return {}
     end
 
-    SetThread(7)
     return Result
 end
 
@@ -173,7 +171,6 @@ Loader.Load = function()
 end
 
 Loader.Call = function(ModuleKey, FunctionName, ...)
-    SetThread(2)
 
     local Args = {...}
     local BypassHook = false
@@ -205,7 +202,6 @@ Loader.Call = function(ModuleKey, FunctionName, ...)
         return nil
     end
 
-    SetThread(2)
     return Func(table.unpack(Args))
 end
 
@@ -217,7 +213,6 @@ Loader.Hook = function(ModuleKey, FunctionName, HookID, HookFunc, Config)
 
     Config = Config or {}
 
-    SetThread(2)
     local Mod = GlobalTable[ModuleKey]
     if not Mod then
         warn(("Module %s not found"):format(ModuleKey))
@@ -302,8 +297,7 @@ Loader.Hook = function(ModuleKey, FunctionName, HookID, HookFunc, Config)
     if Debug then
         print(("Hook applied: %s -> %s [ID=%s, Active]"):format(ModuleKey, FunctionName, HookID))
     end
-
-    SetThread(7)
+    
     return OrigFunc
 end
 
