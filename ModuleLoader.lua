@@ -206,7 +206,8 @@ Loader.Call = function(ModuleKey, FunctionName, ...)
         warn(("Function %s not found in module %s"):format(FunctionName, ModuleKey))
         return nil
     end
-
+    
+    SetThread(7)
     return Func(table.unpack(Args))
 end
 
