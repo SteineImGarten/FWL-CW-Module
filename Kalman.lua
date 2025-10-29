@@ -1,5 +1,5 @@
 local Kalman = {}
-KalmanPredictor.__index = Kalman
+Kalman.__index = Kalman
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
