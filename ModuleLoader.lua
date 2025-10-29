@@ -399,6 +399,23 @@ Loader.ShowFunc = function(FuncName)
     return Results
 end
 
+Loader.Get = function(Name)
+    if type(Name) ~= "string" then
+        warn("Loader.Get requires a string module key or name")
+        return nil
+    end
+
+    local GlobalTable = getgenv()
+    local Mod = GlobalTable[Name] or GlobalTable["@" .. Name]
+
+    if not Mod then
+        warn(("Module not found: %s"):format(Name))
+        return nil
+    end
+
+    return Mod
+end
+
 GlobalTable.HookLoader = Loader
 
 table.insert(GlobalTable._LoaderCache, {Folders = Folders, Loader = Loader})
