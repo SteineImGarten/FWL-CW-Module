@@ -100,9 +100,6 @@ function Kalman.Predict(Part, Origin, Speed, DrawLine, Gravity)
         return CFrame.lookAt(Origin, FinalPredictedPosition)
     end
 
-    local Ping = math.clamp(Player:GetNetworkPing(), 0.01, 0.3)
-    TimeToHit = TimeToHit + Ping
-
     local UserId = Player.UserId
     local Filter = KalmanFilters[UserId] or KalmanFilter.new()
     KalmanFilters[UserId] = Filter
@@ -110,11 +107,12 @@ function Kalman.Predict(Part, Origin, Speed, DrawLine, Gravity)
     Filter:predict()
     Filter:update(FinalPredictedPosition)
 
+    local FuturePosition = FinalPredictedPosition
     if DrawLine then
-        DrawPredictionLine(Origin, Filter.X, Color3.new(0, 1, 0), TimeToHit)
+        DrawPredictionLine(Origin, FuturePosition, Color3.new(0,1,0), TimeToHit)
     end
-
-    return CFrame.lookAt(Origin, Filter.X)
+    
+    return CFrame.lookAt(Origin, FuturePosition)
 end
 
 return Kalman
