@@ -35,31 +35,6 @@ function Filter:Update(MeasPos, MeasVel, Dt)
     return self.Pos, self.Vel
 end
 
-local function DrawLine(Start, End, Color, Duration)
-    local Cam = workspace.CurrentCamera
-    local Line = Drawing.new("Line")
-    Line.Color = Color
-    Line.Thickness = 2
-    Line.Transparency = 1
-
-    coroutine.wrap(function()
-        local T0 = tick()
-        while tick() - T0 < Duration do
-            local SS, SO = Cam:WorldToViewportPoint(Start)
-            local ES, EO = Cam:WorldToViewportPoint(End)
-            if SO or EO then
-                Line.From = Vector2.new(SS.X, SS.Y)
-                Line.To = Vector2.new(ES.X, ES.Y)
-                Line.Visible = true
-            else
-                Line.Visible = false
-            end
-            task.wait()
-        end
-        Line:Remove()
-    end)()
-end
-
 local Filters = {}
 
 function Kalman.Predict(Origin, Target, Speed, Gravity)
@@ -78,7 +53,6 @@ function Kalman.Predict(Origin, Target, Speed, Gravity)
     local Fut = Pos + Vel * T
     Fut = Fut + Vector3.new(0, -0.5 * Gravity * T^2, 0)
 
-    DrawLine(Origin, Fut, Color3.new(0,1,0), T)
     return CFrame.new(Origin, Fut)
 end
 
