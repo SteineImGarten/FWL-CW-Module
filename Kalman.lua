@@ -83,7 +83,7 @@ function Kalman.Predict(Origin, Target, Speed, Ping, Gravity)
 
     DrawLine(Origin, Fut, Color3.new(0,1,0), T)
 
-    return Fut
+    return CFrame.new(Fut)
 end
 
 return Kalman
