@@ -140,7 +140,6 @@ local function PrintReturn(Ret)
 end
 
 Loader.Load = function()
-    
 
     local Mods = {}
     for _, Folder in ipairs(Folders) do
@@ -169,6 +168,8 @@ Loader.Load = function()
     end
 
     getgenv().LOADED_FINISHED = true
+    print("Finished")
+    
     return Mods
 end
 
