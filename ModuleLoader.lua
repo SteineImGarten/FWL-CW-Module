@@ -45,6 +45,8 @@ end
 
 local function Safe(Module)
 
+    SetThread(2)
+
     local Ok, Result = pcall(require, Module)
     if not Ok then
         if Debug then
@@ -55,6 +57,8 @@ local function Safe(Module)
     if typeof(Result) ~= "table" then
         return {}
     end
+
+    SetThread(7)
 
     return Result
 end
