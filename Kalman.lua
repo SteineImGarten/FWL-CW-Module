@@ -74,27 +74,38 @@ function Kalman.Predict(Part, Origin, Speed, DrawLine, Gravity)
     Speed = Speed or 300
     Gravity = Gravity or 196.2
 
-    local FlatTarget = Vector3.new(Part.Position.X, 0, Part.Position.Z)
-    local FlatOrigin = Vector3.new(Origin.X, 0, Origin.Z)
-    local HorizontalDistance = (FlatTarget - FlatOrigin).Magnitude
+    local D = (Part.Position - Origin)
+    local R = Vector3.new(D.X, 0, D.Z).Magnitude
+    local y = D.Y
 
-    local TimeToHit = HorizontalDistance / Speed
-
-    local PredictedFlat = FlatTarget + Vector3.new(Velocity.X, 0, Velocity.Z) * TimeToHit
-
-    local GravityOffset = Vector3.new(0, 0.5 * Gravity * TimeToHit^2, 0) 
-
-    local AimPosition = Vector3.new(
-        PredictedFlat.X,
-        Part.Position.Y + Velocity.Y * TimeToHit,
-        PredictedFlat.Z
-    ) + GravityOffset
-
-    if DrawLine then
-        DrawPredictionLine(Origin, AimPosition, Color3.new(0,1,0), TimeToHit)
+    if R < 0.01 then
+        return CFrame.lookAt(Origin, Part.Position)
     end
 
-    return CFrame.lookAt(Origin, AimPosition)
+    local v2 = Speed * Speed
+    local discriminant = v2 * v2 - Gravity * (Gravity * R * R + 2 * y * v2)
+
+    if discriminant < 0 then
+        return CFrame.lookAt(Origin, Part.Position)
+    end
+
+    local sqrtDisc = math.sqrt(discriminant)
+    local theta = math.atan((v2 + sqrtDisc) / (Gravity * R))
+
+    local horizDir = Vector3.new(D.X, 0, D.Z).Unit
+
+    local vx = math.cos(theta) * Speed
+    local vy = math.sin(theta) * Speed
+    local launchVel = horizDir * vx + Vector3.new(0, vy, 0)
+
+    local lookDistance = math.max(R, 1)
+    local AimPoint = Origin + launchVel.Unit * lookDistance * 2
+
+    if DrawLine then
+        DrawPredictionLine(Origin, AimPoint, Color3.new(0, 1, 0), lookDistance / Speed)
+    end
+
+    return CFrame.lookAt(Origin, AimPoint)
 end
 
 return Kalman
