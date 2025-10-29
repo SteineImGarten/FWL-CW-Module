@@ -19,7 +19,6 @@ function Filter.New()
 end
 
 function Filter:Update(MeasPos, MeasVel, Dt)
-
     self.Pos = self.Pos + self.Vel * Dt
     self.PPos = self.PPos + self.QPos
     self.PVel = self.PVel + self.QVel
@@ -62,9 +61,8 @@ local function DrawLine(Start, End, Color, Duration)
 end
 
 local Filters = {}
-local G = workspace.Gravity
 
-function Kalman.Predict(Origin, Target, Speed, Ping)
+function Kalman.Predict(Origin, Target, Speed, Ping, Gravity)
     local Dt = RunService.Heartbeat:Wait()
 
     local F = Filters[Target] or Filter.New()
@@ -79,8 +77,9 @@ function Kalman.Predict(Origin, Target, Speed, Ping)
     local Fut = Pos + Vel * Delay
 
     local T = (Fut - Origin).Magnitude / Speed
+
     Fut = Fut + Vel * T
-    Fut = Fut + Vector3.new(0, -0.5 * G * T^2, 0)
+    Fut = Fut + Vector3.new(0, -0.5 * Gravity * T^2, 0)
 
     DrawLine(Origin, Fut, Color3.new(0,1,0), T)
 
