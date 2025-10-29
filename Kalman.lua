@@ -82,11 +82,13 @@ function Kalman.Predict(Part, Origin, Speed, DrawLine, Gravity)
 
     local PredictedFlat = FlatTarget + Vector3.new(Velocity.X, 0, Velocity.Z) * TimeToHit
 
-    local VerticalDisplacement = Part.Position.Y - Origin.Y
-    local VerticalCompensation = 0.5 * Gravity * TimeToHit^2
-    local AimY = Origin.Y + VerticalDisplacement + VerticalCompensation + Velocity.Y * TimeToHit
+    local GravityOffset = Vector3.new(0, -0.5 * Gravity * TimeToHit^2, 0)
 
-    local AimPosition = Vector3.new(PredictedFlat.X, AimY, PredictedFlat.Z)
+    local AimPosition = Vector3.new(
+        PredictedFlat.X,
+        Part.Position.Y + Velocity.Y * TimeToHit,
+        PredictedFlat.Z
+    ) + GravityOffset
 
     if DrawLine then
         DrawPredictionLine(Origin, AimPosition, Color3.new(0,1,0), TimeToHit)
@@ -94,6 +96,5 @@ function Kalman.Predict(Part, Origin, Speed, DrawLine, Gravity)
 
     return CFrame.lookAt(Origin, AimPosition)
 end
-
 
 return Kalman
