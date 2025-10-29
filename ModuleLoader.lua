@@ -175,6 +175,7 @@ Loader.Load = function()
 end
 
 Loader.Call = function(ModuleKey, FunctionName, ...)
+    SetThread(2)
 
     local Args = {...}
     local BypassHook = false
