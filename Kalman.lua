@@ -69,35 +69,26 @@ local function DrawPredictionLine(Origin, Target, Color, Duration)
     end)()
 end
 
-function Kalman.Predict(Part, Origin, Speed, DrawLine, Gravity)
+function Kalman.Predict(Part, Origin, Speed, DrawLine)
     local Velocity = Part.AssemblyLinearVelocity
     local FlatPosition = Vector3.new(Part.Position.X, 0, Part.Position.Z)
     local FlatOrigin = Vector3.new(Origin.X, 0, Origin.Z)
-    
+
     local Distance = (FlatPosition - FlatOrigin).Magnitude
     Speed = Speed or 300
-    Gravity = Gravity or 196.2
 
     local TimeToHit = Distance / Speed
 
-    local PredictedFlatPosition = FlatPosition + (Velocity * TimeToHit)
-    
-    local GravityOffset = Vector3.new(0, -0.5 * Gravity * TimeToHit^2, 0)
-
-    local FinalPredictedPosition = Vector3.new(
-        PredictedFlatPosition.X,
-        Part.Position.Y + (Velocity.Y * TimeToHit),
-        PredictedFlatPosition.Z
-    ) + GravityOffset
+    local PredictedPosition = Part.Position + (Velocity * TimeToHit)
 
     local Character = Part:FindFirstAncestorOfClass("Model")
     if not Character then
-        return CFrame.lookAt(Origin, FinalPredictedPosition)
+        return CFrame.lookAt(Origin, PredictedPosition)
     end
 
     local Player = Players:GetPlayerFromCharacter(Character)
     if not Player then
-        return CFrame.lookAt(Origin, FinalPredictedPosition)
+        return CFrame.lookAt(Origin, PredictedPosition)
     end
 
     local Ping = math.clamp(Player:GetNetworkPing(), 0.01, 0.3)
@@ -108,7 +99,7 @@ function Kalman.Predict(Part, Origin, Speed, DrawLine, Gravity)
     KalmanFilters[UserId] = Filter
 
     Filter:predict()
-    Filter:update(FinalPredictedPosition)
+    Filter:update(PredictedPosition)
 
     if DrawLine then
         DrawPredictionLine(Origin, Filter.X, Color3.new(0, 1, 0), TimeToHit)
