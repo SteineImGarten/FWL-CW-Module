@@ -409,8 +409,11 @@ Loader.Get = function(Name)
     local Mod = GlobalTable[Name] or GlobalTable["@" .. Name]
 
     if not Mod then
-        warn(("Module not found: %s"):format(Name))
-        return nil
+        Mod = getgenv()[Name]
+        if not Mod then
+            warn(("Module not found: %s"):format(Name))
+            return nil
+        end
     end
 
     return Mod
