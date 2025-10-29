@@ -37,9 +37,7 @@ end
 
 local Filters = {}
 
-function Kalman.Predict(Origin, Target, Speed, Gravity)
-    local Dt = RunService.Heartbeat:Wait()
-
+function Kalman.Predict(Origin, Target, Speed, Gravity, Dt)
     local F = Filters[Target] or Filter.New()
     Filters[Target] = F
 
@@ -49,11 +47,10 @@ function Kalman.Predict(Origin, Target, Speed, Gravity)
     local Pos, Vel = F:Update(MeasPos, MeasVel, Dt)
 
     local T = (Pos - Origin).Magnitude / Speed
-
-    local Fut = Pos + Vel * T
-    Fut = Fut + Vector3.new(0, -0.5 * Gravity * T^2, 0)
+    local Fut = Pos + Vel * T + Vector3.new(0, -0.5 * Gravity * T^2, 0)
 
     return CFrame.new(Origin, Fut)
 end
+
 
 return Kalman
