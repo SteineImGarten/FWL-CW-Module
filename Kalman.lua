@@ -1,56 +1,114 @@
 local Kalman = {}
-Kalman.__index = Kalman
+KalmanPredictor.__index = Kalman
 
+local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
 
-local Filter = {}
-Filter.__index = Filter
+local KalmanFilter = {}
+KalmanFilter.__index = KalmanFilter
 
-function Filter.New()
-    local self = setmetatable({}, Filter)
-    self.Pos = Vector3.new(0,0,0)
-    self.Vel = Vector3.new(0,0,0)
-    self.PPos = Vector3.new(1,1,1)
-    self.PVel = Vector3.new(1,1,1)
-    self.QPos = Vector3.new(0.1,0.1,0.1)
-    self.QVel = Vector3.new(0.1,0.1,0.1)
-    self.R = Vector3.new(1,1,1)
+function KalmanFilter.new()
+    local self = setmetatable({}, KalmanFilter)
+    self.X = Vector3.new(0, 0, 0)
+    self.P = Vector3.new(1, 1, 1)
+    self.Q = Vector3.new(0.1, 0.1, 0.1)
+    self.R = Vector3.new(0.1, 0.1, 0.1)
+    self.K = Vector3.new(0, 0, 0)
     return self
 end
 
-function Filter:Update(MeasPos, MeasVel, Dt)
-    self.Pos = self.Pos + self.Vel * Dt
-    self.PPos = self.PPos + self.QPos
-    self.PVel = self.PVel + self.QVel
-
-    local KPos = self.PPos / (self.PPos + self.R)
-    local KVel = self.PVel / (self.PVel + self.R)
-
-    self.Pos = self.Pos + KPos * (MeasPos - self.Pos)
-    self.Vel = self.Vel + KVel * (MeasVel - self.Vel)
-
-    self.PPos = (Vector3.new(1,1,1) - KPos) * self.PPos
-    self.PVel = (Vector3.new(1,1,1) - KVel) * self.PVel
-
-    return self.Pos, self.Vel
+function KalmanFilter:predict()
+    self.P = self.P + self.Q
 end
 
-local Filters = {}
-
-function Kalman.Predict(Origin, Target, Speed, Gravity, Dt)
-    local F = Filters[Target] or Filter.New()
-    Filters[Target] = F
-
-    local MeasPos = Target.Position
-    local MeasVel = Target.AssemblyLinearVelocity or Vector3.new(0,0,0)
-
-    local Pos, Vel = F:Update(MeasPos, MeasVel, Dt)
-
-    local T = (Pos - Origin).Magnitude / Speed
-    local Fut = Pos + Vel * T + Vector3.new(0, -0.5 * Gravity * T^2, 0)
-
-    return CFrame.new(Origin, Fut)
+function KalmanFilter:update(Z)
+    self.K = Vector3.new(
+        self.P.X / (self.P.X + self.R.X),
+        self.P.Y / (self.P.Y + self.R.Y),
+        self.P.Z / (self.P.Z + self.R.Z)
+    )
+    self.X = self.X + Vector3.new(
+        self.K.X * (Z.X - self.X.X),
+        self.K.Y * (Z.Y - self.X.Y),
+        self.K.Z * (Z.Z - self.X.Z)
+    )
+    self.P = Vector3.new(
+        (1 - self.K.X) * self.P.X,
+        (1 - self.K.Y) * self.P.Y,
+        (1 - self.K.Z) * self.P.Z
+    )
 end
 
+local KalmanFilters = {}
+
+local function DrawPredictionLine(Origin, Target, Color, Duration)
+    local Camera = Workspace.CurrentCamera
+    local Line = Drawing.new("Line")
+    Line.Thickness = 1.5
+    Line.Color = Color
+    Line.Transparency = 1
+
+    coroutine.wrap(function()
+        local Start = tick()
+        while tick() - Start < Duration do
+            local OriginPos, OriginVisible = Camera:WorldToViewportPoint(Origin)
+            local TargetPos, TargetVisible = Camera:WorldToViewportPoint(Target)
+
+            if OriginVisible and TargetVisible then
+                Line.From = Vector2.new(OriginPos.X, OriginPos.Y)
+                Line.To = Vector2.new(TargetPos.X, TargetPos.Y)
+                Line.Visible = true
+            else
+                Line.Visible = false
+            end
+
+            task.wait()
+        end
+        Line:Remove()
+    end)()
+end
+
+function Kalman.Predict(Part, Origin, Speed, DrawDot)
+    local Velocity = Part.AssemblyLinearVelocity
+    local FlatPosition = Vector3.new(Part.Position.X, 0, Part.Position.Z)
+    local FlatOrigin = Vector3.new(Origin.X, 0, Origin.Z)
+    
+    local Distance = (FlatPosition - FlatOrigin).Magnitude
+    
+    Speed = Speed
+    
+    local TimeToHit = Distance / Speed
+
+    local Gravity = workspace.Gravity or 196.2
+
+    local PredictedFlatPosition = FlatPosition + (Velocity * TimeToHit)
+    
+    local PredictedY = Part.Position.Y + (Velocity.Y * TimeToHit) - (0.5 * Gravity * TimeToHit^2)
+
+    local FinalPredictedPosition = Vector3.new(PredictedFlatPosition.X, PredictedY, PredictedFlatPosition.Z)
+
+    local Character = Part:FindFirstAncestorOfClass("Model")
+    if not Character then return FinalPredictedPosition end
+
+    local Player = game:GetService("Players"):GetPlayerFromCharacter(Character)
+    if not Player then return FinalPredictedPosition end
+
+    local Ping = math.clamp(Player:GetNetworkPing(), 0.01, 0.3)
+    TimeToHit = TimeToHit + Ping
+
+    local UserId = Player.UserId
+    local Filter = KalmanFilters[UserId] or KalmanFilter.new()
+    KalmanFilters[UserId] = Filter
+
+    Filter:predict()
+    Filter:update(FinalPredictedPosition)
+
+    if DrawDot then
+        DrawPredictionLine(Filter.X, Color3.new(0, 1, 0), TimeToHit)
+    end
+
+    return Filter.X
+end
 
 return Kalman
