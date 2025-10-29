@@ -7,13 +7,17 @@ local Modules = { Name = {}, Id = {} }
 local UtilityIds = {}
 local WeaponIds = {}
 
-for Key, Value in HL.Get("@UtilityIds") do
-    UtilityIds[Key:lower()] = Value
-end
-
-for Key, Value in HL.Get("@WeaponIds") do
-    WeaponIds[Key:lower()] = Value
-end
+spawn(function()
+    repeat task.wait(0.05) until getgenv().LOADED_FINISHED
+        
+    for Key, Value in HL.Get("@UtilityIds") do
+        UtilityIds[Key:lower()] = Value
+    end
+        
+    for Key, Value in HL.Get("@WeaponIds") do
+        WeaponIds[Key:lower()] = Value
+    end
+end)
 
 local function WeaponData(ItemName, ItemId)
     local Key = ItemName and ItemName:lower():gsub("%s+", "")
