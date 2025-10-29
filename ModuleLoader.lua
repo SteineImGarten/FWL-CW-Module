@@ -210,6 +210,8 @@ Loader.Call = function(ModuleKey, FunctionName, ...)
 end
 
 Loader.Hook = function(ModuleKey, FunctionName, HookID, HookFunc, Config)
+    SetThread(2)
+    
     if type(HookFunc) ~= "function" and type(HookID) == "function" then
         HookFunc, Config = HookID, HookFunc
         HookID = "Default"
@@ -301,7 +303,8 @@ Loader.Hook = function(ModuleKey, FunctionName, HookID, HookFunc, Config)
     if Debug then
         print(("Hook applied: %s -> %s [ID=%s, Active]"):format(ModuleKey, FunctionName, HookID))
     end
-    
+
+    SetThread(7)
     return OrigFunc
 end
 
