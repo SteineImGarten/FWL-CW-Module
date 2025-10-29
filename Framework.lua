@@ -4,7 +4,7 @@ local Modules = { Name = {}, Id = {} }
 local UtilityIds = {}
 local WeaponIds = {}
 
-for Key, Value in HL.Get("@UtilityIds) do
+for Key, Value in HL.Get("@UtilityIds") do
     UtilityIds[Key:lower()] = Value
 end
 
