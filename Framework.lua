@@ -127,7 +127,7 @@ local function HealthTarget(Distance, Priority, CheckFunction)
     return ClosestPlayer and { [ClosestPlayer.Name] = true } or nil
 end
 
-local function MouseTarget(Distance, Priority, CheckFunction)
+local function MouseTarget(Distance, FOV, CheckFunction)
     local Players = game:GetService("Players")
     local LocalPlayer = Players.LocalPlayer
     local UserInputService = game:GetService("UserInputService")
@@ -139,6 +139,7 @@ local function MouseTarget(Distance, Priority, CheckFunction)
     end
 
     local Distance = Distance or math.huge
+    local FOV = FOV or math.huge
     local CheckFunction = CheckFunction or DefaultCheck
     local ClosestPlayer
     local MousePosition = UserInputService:GetMouseLocation()
@@ -151,9 +152,9 @@ local function MouseTarget(Distance, Priority, CheckFunction)
         local VectorPos, OnScreen = Camera:WorldToScreenPoint(HRP.Position)
 
         if OnScreen then
-            local Magnitude = (MousePosition - Vector2.new(VectorPos.X, VectorPos.Y)).Magnitude
-            if Magnitude < Distance then
-                Distance = Magnitude
+            local ScreenDistance = (MousePosition - Vector2.new(VectorPos.X, VectorPos.Y)).Magnitude
+            if ScreenDistance < Distance and ScreenDistance <= FOV then
+                Distance = ScreenDistance
                 ClosestPlayer = Player
             end
         end
