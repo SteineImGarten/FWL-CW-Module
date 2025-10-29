@@ -409,11 +409,23 @@ Loader.Get = function(Name)
     local Mod = GlobalTable[Name] or GlobalTable["@" .. Name]
 
     if not Mod then
-        Mod = getgenv()[Name]
-        if not Mod then
-            warn(("Module not found: %s"):format(Name))
-            return nil
+        local found = {}
+        for key, value in pairs(GlobalTable) do
+            if type(key) == "string" and key:lower():find("utility") then
+                table.insert(found, key)
+            end
         end
+
+        if #found > 0 then
+            print("Found modules with 'Utility' in the name:")
+            for _, key in ipairs(found) do
+                print(" - " .. key)
+            end
+        else
+            warn(("Module not found: %s"):format(Name))
+        end
+
+        return nil
     end
 
     return Mod
