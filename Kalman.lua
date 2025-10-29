@@ -71,48 +71,29 @@ end
 
 function Kalman.Predict(Part, Origin, Speed, DrawLine, Gravity)
     local Velocity = Part.AssemblyLinearVelocity
-    local FlatPosition = Vector3.new(Part.Position.X, 0, Part.Position.Z)
-    local FlatOrigin = Vector3.new(Origin.X, 0, Origin.Z)
-    
-    local Distance = (FlatPosition - FlatOrigin).Magnitude
     Speed = Speed or 300
     Gravity = Gravity or 196.2
 
-    local TimeToHit = Distance / Speed
+    local FlatTarget = Vector3.new(Part.Position.X, 0, Part.Position.Z)
+    local FlatOrigin = Vector3.new(Origin.X, 0, Origin.Z)
+    local HorizontalDistance = (FlatTarget - FlatOrigin).Magnitude
 
-    local PredictedFlatPosition = FlatPosition + (Velocity * TimeToHit)
-    
-    local GravityOffset = Vector3.new(0, -0.5 * Gravity * TimeToHit^2, 0)
+    local TimeToHit = HorizontalDistance / Speed
 
-    local FinalPredictedPosition = Vector3.new(
-        PredictedFlatPosition.X,
-        Part.Position.Y + (Velocity.Y * TimeToHit),
-        PredictedFlatPosition.Z
-    ) + GravityOffset
+    local PredictedFlat = FlatTarget + Vector3.new(Velocity.X, 0, Velocity.Z) * TimeToHit
 
-    local Character = Part:FindFirstAncestorOfClass("Model")
-    if not Character then
-        return CFrame.lookAt(Origin, FinalPredictedPosition)
-    end
+    local VerticalDisplacement = Part.Position.Y - Origin.Y
+    local VerticalCompensation = 0.5 * Gravity * TimeToHit^2
+    local AimY = Origin.Y + VerticalDisplacement + VerticalCompensation + Velocity.Y * TimeToHit
 
-    local Player = Players:GetPlayerFromCharacter(Character)
-    if not Player then
-        return CFrame.lookAt(Origin, FinalPredictedPosition)
-    end
+    local AimPosition = Vector3.new(PredictedFlat.X, AimY, PredictedFlat.Z)
 
-    local UserId = Player.UserId
-    local Filter = KalmanFilters[UserId] or KalmanFilter.new()
-    KalmanFilters[UserId] = Filter
-
-    Filter:predict()
-    Filter:update(FinalPredictedPosition)
-
-    local FuturePosition = FinalPredictedPosition
     if DrawLine then
-        DrawPredictionLine(Origin, FuturePosition, Color3.new(0,1,0), TimeToHit)
+        DrawPredictionLine(Origin, AimPosition, Color3.new(0,1,0), TimeToHit)
     end
-    
-    return CFrame.lookAt(Origin, FuturePosition)
+
+    return CFrame.lookAt(Origin, AimPosition)
 end
+
 
 return Kalman
