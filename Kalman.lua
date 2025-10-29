@@ -82,7 +82,7 @@ function Kalman.Predict(Part, Origin, Speed, DrawLine, Gravity)
 
     local PredictedFlat = FlatTarget + Vector3.new(Velocity.X, 0, Velocity.Z) * TimeToHit
 
-    local GravityOffset = Vector3.new(0, -0.5 * Gravity * TimeToHit^2, 0)
+    local GravityOffset = Vector3.new(0, 0.5 * Gravity * TimeToHit^2, 0) 
 
     local AimPosition = Vector3.new(
         PredictedFlat.X,
