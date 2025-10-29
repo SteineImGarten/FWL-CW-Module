@@ -1,10 +1,6 @@
 local GlobalTable = getgenv()
 GlobalTable._LoaderCache = GlobalTable._LoaderCache or {}
 
-local function SetThread(Val)
-    setthreadidentity(Val)
-end
-
 local function CompareFolderLists(a, b)
     if #a ~= #b then return false end
     for i = 1, #a do
@@ -45,7 +41,7 @@ end
 
 local function Safe(Module)
 
-    SetThread(2)
+    setthreadidentity(2)
 
     local Ok, Result = pcall(require, Module)
     if not Ok then
@@ -58,7 +54,7 @@ local function Safe(Module)
         return {}
     end
 
-    SetThread(7)
+    setthreadidentity(7)
 
     return Result
 end
@@ -142,7 +138,7 @@ local function PrintReturn(Ret)
 end
 
 Loader.Load = function()
-    SetThread(2)
+    setthreadidentity(2)
 
     local Mods = {}
     for _, Folder in ipairs(Folders) do
@@ -170,12 +166,12 @@ Loader.Load = function()
         print("Total modules loaded:", Count)
     end
 
-    SetThread(7)
+    setthreadidentity(7)
     return Mods
 end
 
 Loader.Call = function(ModuleKey, FunctionName, ...)
-    SetThread(2)
+    setthreadidentity(2)
 
     local Args = {...}
     local BypassHook = false
@@ -207,12 +203,12 @@ Loader.Call = function(ModuleKey, FunctionName, ...)
         return nil
     end
     
-    SetThread(7)
+    setthreadidentity(7)
     return Func(table.unpack(Args))
 end
 
 Loader.Hook = function(ModuleKey, FunctionName, HookID, HookFunc, Config)
-    SetThread(2)
+    setthreadidentity(2)
     
     if type(HookFunc) ~= "function" and type(HookID) == "function" then
         HookFunc, Config = HookID, HookFunc
@@ -306,7 +302,7 @@ Loader.Hook = function(ModuleKey, FunctionName, HookID, HookFunc, Config)
         print(("Hook applied: %s -> %s [ID=%s, Active]"):format(ModuleKey, FunctionName, HookID))
     end
 
-    SetThread(7)
+    setthreadidentity(7)
     return OrigFunc
 end
 
