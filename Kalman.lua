@@ -62,7 +62,7 @@ end
 
 local Filters = {}
 
-function Kalman.Predict(Origin, Target, Speed, Ping, Gravity)
+function Kalman.Predict(Origin, Target, Speed, Gravity)
     local Dt = RunService.Heartbeat:Wait()
 
     local F = Filters[Target] or Filter.New()
@@ -73,16 +73,12 @@ function Kalman.Predict(Origin, Target, Speed, Ping, Gravity)
 
     local Pos, Vel = F:Update(MeasPos, MeasVel, Dt)
 
-    local Delay = Ping / 1000
-    local Fut = Pos + Vel * Delay
+    local T = (Pos - Origin).Magnitude / Speed
 
-    local T = (Fut - Origin).Magnitude / Speed
-
-    Fut = Fut + Vel * T
+    local Fut = Pos + Vel * T
     Fut = Fut + Vector3.new(0, -0.5 * Gravity * T^2, 0)
 
     DrawLine(Origin, Fut, Color3.new(0,1,0), T)
-
     return CFrame.new(Origin, Fut)
 end
 
