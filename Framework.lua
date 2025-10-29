@@ -1,6 +1,8 @@
 local HL = loadstring(game:HttpGet("https://raw.githubusercontent.com/SteineImGarten/FWL-CW-Module/refs/heads/main/ModuleLoader.lua"))()
 local Kalman = loadstring(game:HttpGet("https://raw.githubusercontent.com/SteineImGarten/FWL-CW-Module/refs/heads/main/Kalman.lua"))()
 
+repeat task.wait(0.05) until getgenv().LOADED_FINISHED
+
 local Modules = { Name = {}, Id = {} }
 local UtilityIds = {}
 local WeaponIds = {}
