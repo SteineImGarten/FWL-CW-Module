@@ -4,15 +4,6 @@ local Modules = { Name = {}, Id = {} }
 local UtilityIds = {}
 local WeaponIds = {}
 
-HL.Get("@WeaponMetadata")
-HL.Get("@UtilityMetadata")
-HL.Get("@RoduxStore")
-HL.Get("@DataHandler")
-HL.Get("@RangedWeaponClient")
-HL.Get("@MeleeWeaponClient")
-HL.Get("@UtilityIds)
-HL.Get("@WeaponIds")
-
 for Key, Value in HL.Get("@UtilityIds) do
     UtilityIds[Key:lower()] = Value
 end
@@ -72,11 +63,6 @@ local function SessionData(Player)
     return HL.Get("@DataHandler").getSessionDataRoduxStoreForPlayer(Player or Players.LocalPlayer)
 end
 
-local function MenuCheck(Player)
-    local State = PlayerState()
-    return State and State.UI and State.UI.MenuOpen and State.UI.MenuOpen[Player] or false
-en
-
 local function ClosestPlayer(Distance, Priority, CheckFunction)
     local Players = game:GetService("Players")
     local LocalPlayer = Players.LocalPlayer
@@ -92,7 +78,7 @@ local function ClosestPlayer(Distance, Priority, CheckFunction)
 
     for _, Player in Players:GetPlayers() do
         if Player == LocalPlayer then continue end
-        if not CheckFunction(Player) or MenuCheck(Player) then continue end
+        if not CheckFunction(Player) then continue end
 
         local HRP = Player.Character.HumanoidRootPart
         local Magnitude = (HRP.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
@@ -125,7 +111,7 @@ local function HealthTarget(Distance, Priority, CheckFunction)
 
     for _, Player in Players:GetPlayers() do
         if Player == LocalPlayer then continue end
-        if not CheckFunction(Player) or MenuCheck(Player) then continue end
+        if not CheckFunction(Player) then continue end
 
         local HRP = Player.Character.HumanoidRootPart
         local Magnitude = (HRP.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
@@ -159,7 +145,7 @@ local function MouseTarget(Distance, Priority, CheckFunction)
 
     for _, Player in Players:GetPlayers() do
         if Player == LocalPlayer then continue end
-        if not CheckFunction(Player) or MenuCheck(Player) then continue end
+        if not CheckFunction(Player) then continue end
 
         local HRP = Player.Character.HumanoidRootPart
         local VectorPos, OnScreen = Camera:WorldToScreenPoint(HRP.Position)
@@ -184,7 +170,6 @@ return {
     RangedWeapon = RangedWeapon,
     PlayerState = PlayerState,
     SessionData = SessionData,
-    MenuCheck = MenuCheck,
     ClosestPlayer = ClosestPlayer,
     HealthTarget = HealthTarget,
     MouseTarget = MouseTarget,
