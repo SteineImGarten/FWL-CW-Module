@@ -53,6 +53,9 @@ local function DrawPredictionLine(Origin, Target, Color, Duration)
         local Start = tick()
         while tick() - Start < Duration do
 
+            local OriginPos = Camera:WorldToViewportPoint(Origin)
+            local TargetPos = Camera:WorldToViewportPoint(Target)
+                
             Line.From = Vector2.new(OriginPos.X, OriginPos.Y)
             Line.To = Vector2.new(TargetPos.X, TargetPos.Y)
             Line.Visible = true
