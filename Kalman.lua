@@ -52,16 +52,10 @@ local function DrawPredictionLine(Origin, Target, Color, Duration)
     coroutine.wrap(function()
         local Start = tick()
         while tick() - Start < Duration do
-            local OriginPos, OriginVisible = Camera:WorldToViewportPoint(Origin)
-            local TargetPos, TargetVisible = Camera:WorldToViewportPoint(Target)
 
-            if OriginVisible and TargetVisible then
-                Line.From = Vector2.new(OriginPos.X, OriginPos.Y)
-                Line.To = Vector2.new(TargetPos.X, TargetPos.Y)
-                Line.Visible = true
-            else
-                Line.Visible = false
-            end
+            Line.From = Vector2.new(OriginPos.X, OriginPos.Y)
+            Line.To = Vector2.new(TargetPos.X, TargetPos.Y)
+            Line.Visible = true
 
             task.wait()
         end
@@ -96,6 +90,5 @@ function Kalman.Predict(Part, Origin, Speed, DrawLine, Gravity)
 
     return CFrame.lookAt(Origin, AimPosition)
 end
-
 
 return Kalman
