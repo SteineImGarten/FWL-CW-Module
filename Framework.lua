@@ -6,7 +6,7 @@ local UtilityIds = {}
 local WeaponIds = {}
 
 spawn(function()
-    repeat task.wait(0.05) until getgenv().LOADED_FINISHED
+    repeat task.wait(0.05) until getgenv().LOAD_FINISHED
         
     for Key, Value in HL.Get("@UtilityIds") do
         UtilityIds[Key:lower()] = Value
