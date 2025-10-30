@@ -163,8 +163,7 @@ Loader.Load = function()
         print("Total modules loaded:", Count)
     end
 
-    getgenv().LOADED_FINISHED = true
-    print("Finished")
+    getgenv().LOAD_FINISHED = true
     
     return Mods
 end
