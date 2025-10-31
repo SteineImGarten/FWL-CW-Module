@@ -93,7 +93,13 @@ local function NormalizeKey(str)
     return str:lower():gsub("%s+", "")
 end
 
+local function WaitForRangedDefault()
+    repeat task.wait(0.05) until #RangedDefault > 0
+end
+
 local function PrintWepStats(Player)
+    WaitForRangedDefault()
+
     local Tool, WeaponObj = RangedWeapon(Player)
     if not Tool then
         warn("No ranged weapon equipped!")
