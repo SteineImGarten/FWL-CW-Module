@@ -5,6 +5,10 @@ local Modules = { Name = {}, Id = {} }
 local UtilityIds = {}
 local WeaponIds = {}
 
+local RangedDefault = {}
+local WeaponOrder = {}
+local Ranged = {}
+
 spawn(function()
     repeat task.wait(0.05) until getgenv().LOAD_FINISHED
         
@@ -14,6 +18,32 @@ spawn(function()
         
     for Key, Value in HL.Get("@WeaponIds") do
         WeaponIds[Key:lower()] = Value
+    end
+    
+    for i, v in HL.Get("@WeaponsInOrder") do
+        WeaponOrder[v.id] = v
+    end
+
+    for i, v in HL.Get("@WeaponIds") do
+        if WeaponOrder[v] and WeaponOrder[v].class == "ranged" then
+            table.insert(Ranged, i)
+        end
+    end
+
+    for i,v in Ranged do
+    	local Meta = WeaponData(v) or UtilityData(v)
+    	if Meta then
+    		table.insert(RangedDefault,{Name = v,OG = table.clone(Meta)})
+    	end
+    end
+
+    function ModRanged(Name, Value)
+    	for i,v in RangedDefault do
+    		local Meta = WeaponData(v.Name) or UtilityData(v.Name)
+    		if Meta[Name] then
+    			Meta[Name] = Value
+    		end
+    	end
     end
 end)
 
@@ -51,8 +81,8 @@ local function RangedWeapon(Player)
 
     for _, Tool in Character:GetChildren() do
         if Tool:IsA("Tool") and Tool:GetAttribute("ItemType") == "weapon" then
-            local meta = HL.Get("@WeaponMetadata")[Tool:GetAttribute("ItemId")]
-            if meta and meta.class:lower():match("ranged") then
+            local Meta = HL.Get("@WeaponMetadata")[Tool:GetAttribute("ItemId")]
+            if Meta and Meta.class:lower():match("ranged") then
                 return Tool, HL.Get("@RangedWeaponClient").getObj(Tool)
             end
         end
