@@ -89,6 +89,10 @@ local function ModRanged(Name, Value)
     end
 end
 
+local function NormalizeKey(str)
+    return str:lower():gsub("%s+", "")
+end
+
 local function PrintWepStats(Player)
     local Tool, WeaponObj = RangedWeapon(Player)
     if not Tool then
@@ -96,11 +100,11 @@ local function PrintWepStats(Player)
         return
     end
 
-    local WeaponName = Tool.Name
-    print("Stats for currently held weapon: " .. WeaponName)
+    local WeaponKey = NormalizeKey(Tool.Name)
+    print("Stats for currently held weapon: " .. Tool.Name)
 
     for _, weapon in ipairs(RangedDefault) do
-        if weapon.Name == WeaponName then
+        if NormalizeKey(weapon.Name) == WeaponKey then
             for statName, statValue in pairs(weapon.OG) do
                 print("  " .. statName .. " : " .. tostring(statValue))
             end
@@ -108,7 +112,7 @@ local function PrintWepStats(Player)
         end
     end
 
-    warn("Weapon stats not found in RangedDefault: " .. WeaponName)
+    warn("Weapon stats not found in RangedDefault: " .. Tool.Name)
 end
 
 local function PlayerState()
