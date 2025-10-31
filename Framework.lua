@@ -9,6 +9,18 @@ local RangedDefault = {}
 local WeaponOrder = {}
 local Ranged = {}
 
+local function WeaponData(ItemName, ItemId)
+    local Key = ItemName and ItemName:lower():gsub("%s+", "")
+    if Key and not WeaponIds[Key] then return end
+    return (Key and HL.Get("@WeaponMetadata")[WeaponIds[Key]]) or HL.Get("@WeaponMetadata")[ItemId]
+end
+
+local function UtilityData(ItemName, ItemId)
+    local Key = ItemName and ItemName:lower():gsub("%s+", "")
+    if Key and not UtilityIds[Key] then return end
+    return (Key and HL.Get("@UtilityMetadata")[UtilityIds[Key]]) or HL.Get("@UtilityMetadata")[ItemId]
+end
+
 spawn(function()
     repeat task.wait(0.05) until getgenv().LOAD_FINISHED
         
@@ -37,18 +49,6 @@ spawn(function()
     	end
     end
 end)
-
-local function WeaponData(ItemName, ItemId)
-    local Key = ItemName and ItemName:lower():gsub("%s+", "")
-    if Key and not WeaponIds[Key] then return end
-    return (Key and HL.Get("@WeaponMetadata")[WeaponIds[Key]]) or HL.Get("@WeaponMetadata")[ItemId]
-end
-
-local function UtilityData(ItemName, ItemId)
-    local Key = ItemName and ItemName:lower():gsub("%s+", "")
-    if Key and not UtilityIds[Key] then return end
-    return (Key and HL.Get("@UtilityMetadata")[UtilityIds[Key]]) or HL.Get("@UtilityMetadata")[ItemId]
-end
 
 local function MeleeWeapon(Player)
     local Players = game:GetService("Players")
