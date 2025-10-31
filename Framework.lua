@@ -37,13 +37,35 @@ spawn(function()
     	end
     end
 
-    function ModRanged(Name, Value)
-    	for i,v in RangedDefault do
+    local function ModRanged(Name, Value)
+    	for i, v in RangedDefault do
     		local Meta = WeaponData(v.Name) or UtilityData(v.Name)
     		if Meta[Name] then
     			Meta[Name] = Value
     		end
     	end
+    end
+
+    local function PrintWepStats(Player)
+        local Tool, WeaponObj = RangedWeapon(Player)
+        if not Tool then
+            warn("No ranged weapon equipped!")
+            return
+        end
+    
+        local WeaponName = Tool.Name
+        print("Stats for currently held weapon: " .. WeaponName)
+    
+        for _, weapon in ipairs(RangedDefault) do
+            if weapon.Name == WeaponName then
+                for statName, statValue in pairs(weapon.OG) do
+                    print("  " .. statName .. " : " .. tostring(statValue))
+                end
+                return
+            end
+        end
+    
+        warn("Weapon stats not found in RangedDefault: " .. WeaponName)
     end
 end)
 
@@ -201,6 +223,8 @@ end
 return {
     Kalman = Kalman,
     HL = HL,
+    ModRanged = ModRanged,
+    PrintWepStats = PrintWepStats,
     WeaponData = WeaponData,
     UtilityData = UtilityData,
     MeleeWeapon = MeleeWeapon,
