@@ -197,33 +197,46 @@ end
 local function MouseTarget(Distance, FOV, CheckFunction)
     local Players = game:GetService("Players")
     local LocalPlayer = Players.LocalPlayer
-    local UserInputService = game:GetService("UserInputService")
+    local Mouse = LocalPlayer:GetMouse()
     local Camera = workspace.CurrentCamera
+
+    local VisPart = "Torso"
 
     local function DefaultCheck(Player)
         local Char = Player.Character
-        return Char and Char:FindFirstChild("HumanoidRootPart") and Char:FindFirstChild("Humanoid") and Char.Humanoid.Health > 0
+        return Char 
+            and Char:FindFirstChild("HumanoidRootPart") 
+            and Char:FindFirstChild("Humanoid") 
+            and Char.Humanoid.Health > 0
     end
 
-    local Distance = Distance or math.huge
-    local FOV = FOV or math.huge
-    local CheckFunction = CheckFunction or DefaultCheck
-    local ClosestPlayer
-    local MousePosition = UserInputService:GetMouseLocation()
+    Distance = Distance or math.huge
+    FOV = FOV or math.huge
+    CheckFunction = CheckFunction or DefaultCheck
 
-    for _, Player in Players:GetPlayers() do
+    local ClosestPlayer = nil
+    local ClosestDistance = Distance
+
+    for _, Player in ipairs(Players:GetPlayers()) do
         if Player == LocalPlayer then continue end
         if not CheckFunction(Player) then continue end
 
-        local HRP = Player.Character.HumanoidRootPart
-        local VectorPos, OnScreen = Camera:WorldToScreenPoint(HRP.Position)
+        local Char = Player.Character
+        if not Char then continue end
 
-        if OnScreen then
-            local ScreenDistance = (MousePosition - Vector2.new(VectorPos.X, VectorPos.Y)).Magnitude
-            if ScreenDistance < Distance and ScreenDistance <= FOV then
-                Distance = ScreenDistance
-                ClosestPlayer = Player
-            end
+        local TargetPart = Char:FindFirstChild(VisPart)
+            or Char:FindFirstChild("UpperTorso")
+            or Char:FindFirstChild("HumanoidRootPart")
+
+        if not TargetPart then continue end
+
+        local ScreenPos, OnScreen = Camera:WorldToScreenPoint(TargetPart.Position)
+        if not OnScreen then continue end
+
+        local ScreenDistance = (Vector2.new(Mouse.X, Mouse.Y) - Vector2.new(ScreenPos.X, ScreenPos.Y)).Magnitude
+        if ScreenDistance < ClosestDistance and ScreenDistance <= FOV then
+            ClosestDistance = ScreenDistance
+            ClosestPlayer = Player
         end
     end
 
