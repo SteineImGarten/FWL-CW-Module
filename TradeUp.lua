@@ -34,35 +34,35 @@ local function DoTrade(Action, CaseName, Spec, Times, Delay)
 end
 
 local Batches = {
-    { Action = "DoTradeDown", Case = "case9", Spec = { amount = 100, cosmeticType = "overheadTag", cosmeticId = "overheadTag8" }, Times = 100 },
-    { Action = "DoTradeUp",   Case = "case9", Spec = { amount = 10,  cosmeticType = "bundles",      cosmeticId = "bundle18"    }, Times = 200 },
+    { Action = "DoTradeDown", Case = "case9", Spec = { amount = 100, cosmeticType = "overheadTag", cosmeticId = "overheadTag8" }, Times = getgenv().TradeDowns },
+    { Action = "DoTradeUp",   Case = "case9", Spec = { amount = 10,  cosmeticType = "bundles",      cosmeticId = "bundle18"    }, Times = getgenv().TradeUps },
 
-    { Action = "DoTradeDown", Case = "case4", Spec = { amount = 100, cosmeticType = "bundles", cosmeticId = "bundle37" }, Times = 100 },
-    { Action = "DoTradeUp",   Case = "case4", Spec = { amount = 10,  cosmeticType = "bundles", cosmeticId = "bundle39" }, Times = 200 },
+    { Action = "DoTradeDown", Case = "case4", Spec = { amount = 100, cosmeticType = "bundles", cosmeticId = "bundle37" }, Times = getgenv().TradeDowns },
+    { Action = "DoTradeUp",   Case = "case4", Spec = { amount = 10,  cosmeticType = "bundles", cosmeticId = "bundle39" }, Times = getgenv().TradeUps },
 
-    { Action = "DoTradeDown", Case = "case5", Spec = { amount = 100, cosmeticType = "characterAura", cosmeticId = "characterAura15" }, Times = 100 },
-    { Action = "DoTradeUp",   Case = "case5", Spec = { amount = 10,  cosmeticType = "characterAura", cosmeticId = "characterAura4"  }, Times = 200 },
+    { Action = "DoTradeDown", Case = "case5", Spec = { amount = 100, cosmeticType = "characterAura", cosmeticId = "characterAura15" }, Times = getgenv().TradeDowns },
+    { Action = "DoTradeUp",   Case = "case5", Spec = { amount = 10,  cosmeticType = "characterAura", cosmeticId = "characterAura4"  }, Times = getgenv().TradeUps },
 
-    { Action = "DoTradeDown", Case = "killEffectsCase", Spec = { amount = 100, cosmeticType = "killEffects", cosmeticId = "killEffect81" }, Times = 100 },
-    { Action = "DoTradeUp",   Case = "killEffectsCase", Spec = { amount = 10,  cosmeticType = "killEffects", cosmeticId = "killEffect32" }, Times = 200 },
+    { Action = "DoTradeDown", Case = "killEffectsCase", Spec = { amount = 100, cosmeticType = "killEffects", cosmeticId = "killEffect81" }, Times = getgenv().TradeDowns },
+    { Action = "DoTradeUp",   Case = "killEffectsCase", Spec = { amount = 10,  cosmeticType = "killEffects", cosmeticId = "killEffect32" }, Times = getgenv().TradeUps },
 
-    { Action = "DoTradeDown", Case = "enchantsCase", Spec = { amount = 100, cosmeticType = "enchants", cosmeticId = "enchant6"  }, Times = 100 },
-    { Action = "DoTradeUp",   Case = "enchantsCase", Spec = { amount = 10,  cosmeticType = "enchants", cosmeticId = "enchant51" }, Times = 200 },
+    { Action = "DoTradeDown", Case = "enchantsCase", Spec = { amount = 100, cosmeticType = "enchants", cosmeticId = "enchant6"  }, Times = getgenv().TradeDowns },
+    { Action = "DoTradeUp",   Case = "enchantsCase", Spec = { amount = 10,  cosmeticType = "enchants", cosmeticId = "enchant51" }, Times = getgenv().TradeUps },
 
-    { Action = "DoTradeDown", Case = "skinsCase", Spec = { amount = 100, cosmeticType = "skins", cosmeticId = "skin58" }, Times = 100 },
-    { Action = "DoTradeUp",   Case = "skinsCase", Spec = { amount = 10,  cosmeticType = "skins", cosmeticId = "skin28" }, Times = 200 },
+    { Action = "DoTradeDown", Case = "skinsCase", Spec = { amount = 100, cosmeticType = "skins", cosmeticId = "skin58" }, Times = getgenv().TradeDowns },
+    { Action = "DoTradeUp",   Case = "skinsCase", Spec = { amount = 10,  cosmeticType = "skins", cosmeticId = "skin28" }, Times = getgenv().TradeUps },
 
-    { Action = "DoTradeDown", Case = "case6", Spec = { amount = 100, cosmeticType = "parryShield", cosmeticId = "parryShield72" }, Times = 100 },
-    { Action = "DoTradeUp",   Case = "case6", Spec = { amount = 10,  cosmeticType = "parryShield", cosmeticId = "parryShield68" }, Times = 200 },
+    { Action = "DoTradeDown", Case = "case6", Spec = { amount = 100, cosmeticType = "parryShield", cosmeticId = "parryShield72" }, Times = getgenv().TradeDowns },
+    { Action = "DoTradeUp",   Case = "case6", Spec = { amount = 10,  cosmeticType = "parryShield", cosmeticId = "parryShield68" }, Times = getgenv().TradeUps },
 
-    { Action = "DoTradeDown", Case = "case7", Spec = { amount = 100, cosmeticType = "emote", cosmeticId = "emote24" }, Times = 100 },
-    { Action = "DoTradeUp",   Case = "case7", Spec = { amount = 10,  cosmeticType = "emote", cosmeticId = "emote63" }, Times = 200 },
+    { Action = "DoTradeDown", Case = "case7", Spec = { amount = 100, cosmeticType = "emote", cosmeticId = "emote24" }, Times = getgenv().TradeDowns },
+    { Action = "DoTradeUp",   Case = "case7", Spec = { amount = 10,  cosmeticType = "emote", cosmeticId = "emote63" }, Times = getgenv().TradeUps },
 
-    { Action = "DoTradeDown", Case = "case8", Spec = { amount = 100, cosmeticType = "emoteIcon", cosmeticId = "emoteIcon38" }, Times = 100 },
-    { Action = "DoTradeUp",   Case = "case8", Spec = { amount = 10,  cosmeticType = "emoteIcon", cosmeticId = "emoteIcon53" }, Times = 200 },
+    { Action = "DoTradeDown", Case = "case8", Spec = { amount = 100, cosmeticType = "emoteIcon", cosmeticId = "emoteIcon38" }, Times = getgenv().TradeDowns },
+    { Action = "DoTradeUp",   Case = "case8", Spec = { amount = 10,  cosmeticType = "emoteIcon", cosmeticId = "emoteIcon53" }, Times = getgenv().TradeUps },
 
-    { Action = "DoTradeDown", Case = "case10", Spec = { amount = 100, cosmeticType = "chatTag", cosmeticId = "chatTag10" }, Times = 100 },
-    { Action = "DoTradeUp",   Case = "case10", Spec = { amount = 10,  cosmeticType = "skins",   cosmeticId = "skin77"    }, Times = 200 },
+    { Action = "DoTradeDown", Case = "case10", Spec = { amount = 100, cosmeticType = "chatTag", cosmeticId = "chatTag10" }, Times = getgenv().TradeDowns },
+    { Action = "DoTradeUp",   Case = "case10", Spec = { amount = 10,  cosmeticType = "skins",   cosmeticId = "skin77"    }, Times = getgenv().TradeUps },
 }
 
 local GlobalDelay = 0
