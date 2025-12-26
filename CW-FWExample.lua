@@ -155,6 +155,9 @@ FrameWork.HL.Hook("@SoundHandler", "playSound", "Anti-Parry", function(Original,
             end)
         end
     end
+
+    return Original(...)
+
 end, { Spy = false })
 
 -- Stamina Mods
