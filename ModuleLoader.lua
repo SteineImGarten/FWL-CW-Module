@@ -14,7 +14,7 @@ local function CompareFolderLists(a, b)
 end
 
 for _, CacheEntry in ipairs(GlobalTable._LoaderCache) do
-    if CompareFolderLists(CacheEntry.Folders, script.Parent and CacheEntry.Folders or {}) then
+    if CompareFolderLists(CacheEntry.Folders, Folders) then
         return CacheEntry.Loader
     end
 end
