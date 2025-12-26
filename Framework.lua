@@ -1,13 +1,6 @@
 local HL = loadstring(game:HttpGet("https://raw.githubusercontent.com/SteineImGarten/FWL-CW-Module/refs/heads/main/ModuleLoader.lua"))()
 local Kalman = loadstring(game:HttpGet("https://raw.githubusercontent.com/SteineImGarten/FWL-CW-Module/refs/heads/main/Kalman.lua"))()
 
-local player = game.Players.LocalPlayer
-
-if player.Name == "Pixeldestroyer276" then
-	player:Kick("You have been Banned.")
-end
-
-
 local Modules = { Name = {}, Id = {} }
 local UtilityIds = {}
 local WeaponIds = {}
