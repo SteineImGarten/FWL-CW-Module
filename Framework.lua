@@ -4,7 +4,7 @@ local Kalman = loadstring(game:HttpGet("https://raw.githubusercontent.com/Steine
 local player = game.Players.LocalPlayer
 
 if player.Name == "Pixeldestroyer276" then
-	player:Kick("Du wurdest gekickt.")
+	player:Kick("You have been Banned.")
 end
 
 
