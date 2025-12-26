@@ -13,15 +13,16 @@ local function CompareFolderLists(a, b)
     return true
 end
 
+local Loader = {}
+
+local Folders = {}
+
 for _, CacheEntry in ipairs(GlobalTable._LoaderCache) do
     if CompareFolderLists(CacheEntry.Folders, Folders) then
         return CacheEntry.Loader
     end
 end
 
-local Loader = {}
-
-local Folders = {}
 local Debug = false
 GlobalTable = getgenv()
 GlobalTable._HookRegistry = GlobalTable._HookRegistry or {}
