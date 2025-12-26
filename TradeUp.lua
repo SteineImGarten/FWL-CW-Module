@@ -34,9 +34,6 @@ local function DoTrade(Action, CaseName, Spec, Times, Delay)
 end
 
 local Batches = {
-    { Action = "DoTradeDown", Case = "case9", Spec = { amount = 100, cosmeticType = "overheadTag", cosmeticId = "overheadTag8" }, Times = getgenv().TradeDowns },
-    { Action = "DoTradeUp",   Case = "case9", Spec = { amount = 10,  cosmeticType = "bundles",      cosmeticId = "bundle18"    }, Times = getgenv().TradeUps },
-
     { Action = "DoTradeDown", Case = "case4", Spec = { amount = 100, cosmeticType = "bundles", cosmeticId = "bundle37" }, Times = getgenv().TradeDowns },
     { Action = "DoTradeUp",   Case = "case4", Spec = { amount = 10,  cosmeticType = "bundles", cosmeticId = "bundle39" }, Times = getgenv().TradeUps },
 
@@ -60,9 +57,6 @@ local Batches = {
 
     { Action = "DoTradeDown", Case = "case8", Spec = { amount = 100, cosmeticType = "emoteIcon", cosmeticId = "emoteIcon38" }, Times = getgenv().TradeDowns },
     { Action = "DoTradeUp",   Case = "case8", Spec = { amount = 10,  cosmeticType = "emoteIcon", cosmeticId = "emoteIcon53" }, Times = getgenv().TradeUps },
-
-    { Action = "DoTradeDown", Case = "case10", Spec = { amount = 100, cosmeticType = "chatTag", cosmeticId = "chatTag10" }, Times = getgenv().TradeDowns },
-    { Action = "DoTradeUp",   Case = "case10", Spec = { amount = 10,  cosmeticType = "skins",   cosmeticId = "skin77"    }, Times = getgenv().TradeUps },
 }
 
 local GlobalDelay = 0
