@@ -84,6 +84,11 @@ FrameWork.HL.Hook("@ToastNotificationActionsClient", "add", "ConfigOne", functio
 end)
 
 -- Silent Aim
+
+FrameWork.HL.Hook("@RangedWeaponClient", "cancelReload", "SilentAimCancel", function(Original, ...)
+    return
+end, { Spy = false })
+
 FrameWork.HL.Hook("@RangedWeaponHandler", "calculateFireDirection", "SilentAim", function(Original, ...)
     local Ranged, MetaData = FrameWork.RangedWeapon()
     local Args = {...}
@@ -184,6 +189,14 @@ for i, v in EmotesTable do
         RoduxState.OwnedEmotes[v.id] = 1
     end
 end
+
+FrameWork.ModRanged("minSpread", 0)
+FrameWork.ModRanged("maxSpread", 0)
+FrameWork.ModRanged("gravity", Vector3.new())
+FrameWork.ModRanged("maxDistance", 10000)
+FrameWork.ModRanged("reloadWalkSpeedMultiplier", 1)
+FrameWork.ModRanged("chargeOnDuration", 0.3)
+FrameWork.ModRanged("chargeOffDuration", 1)
 
 --=========================--
 --       FLY SYSTEM        --
