@@ -195,19 +195,19 @@ FrameWork.ModRanged("maxSpread", 0)
 FrameWork.ModRanged("gravity", Vector3.new())
 FrameWork.ModRanged("maxDistance", 10000)
 FrameWork.ModRanged("reloadWalkSpeedMultiplier", 1)
-FrameWork.ModRanged("chargeOnDuration", 0.1)
-FrameWork.ModRanged("chargeOffDuration", 0.1)
+FrameWork.ModRanged("chargeOnDuration", 0.5)
+FrameWork.ModRanged("chargeOffDuration", 1)
 
 --=========================--
 --       FLY SYSTEM        --
 --=========================--
 
 local FlyEnabled = false
-local FlySpeed = 60
 
 UserInputService.InputBegan:Connect(function(input, processed)
     if processed then return end
-    if input.KeyCode == Enum.KeyCode.E and getgenv().Fly then
+
+    if input.KeyCode == getgenv().Keybinds.Fly then
         FlyEnabled = not FlyEnabled
         local HRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
         if not HRP then return end
@@ -237,7 +237,7 @@ RunService.RenderStepped:Connect(function()
             if UserInputService:IsKeyDown(Enum.KeyCode.D) then move = move + Camera.CFrame.RightVector end
             if UserInputService:IsKeyDown(Enum.KeyCode.Space) then move = move + Vector3.new(0, 1, 0) end
             if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then move = move - Vector3.new(0, 1, 0) end
-            if move.Magnitude > 0 then move = move.Unit * FlySpeed end
+            if move.Magnitude > 0 then move = move.Unit * getgenv().FlySpeed end
             HRP.flyVel.VectorVelocity = move
         end
     end
