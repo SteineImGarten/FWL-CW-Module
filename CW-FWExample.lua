@@ -2,8 +2,6 @@
 --     ROBLOX FRAMEWORK    --
 --=========================--
 
-setfpscap(53)
-
 local FrameWork = loadstring(game:HttpGet("https://raw.githubusercontent.com/SteineImGarten/FWL-CW-Module/refs/heads/main/Framework.lua"))()
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
