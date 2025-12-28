@@ -198,7 +198,6 @@ FrameWork.ModRanged("reloadWalkSpeedMultiplier", 1)
 FrameWork.ModRanged("chargeOnDuration", 0)
 FrameWork.ModRanged("chargeOffDuration", 0)
 FrameWork.ModRanged("speed", 350)
-FrameWork.ModRanged("Speed", 350)
 
 --=========================--
 --       FLY SYSTEM        --
