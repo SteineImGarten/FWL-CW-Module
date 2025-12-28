@@ -245,19 +245,7 @@ RunService.RenderStepped:Connect(function()
 end)
 
 --=========================--
---      FAST SPAWN LOOP    --
---=========================--
-
-if not getgenv().Loaded_FIN then
-    RunService.RenderStepped:Connect(function()
-        if getgenv().FastSpawn and LocalPlayer.PlayerGui.RoactUI:FindFirstChild("MainMenu") then
-            FrameWork.HL.Call("@SpawnHandlerClient", "spawnCharacter", true)
-        end
-    end)
-end
-
---=========================--
---       EXECUTION FLAG    --
+--         DESYNC          --
 --=========================--
 
 UserInputService.InputBegan:Connect(function(Input, GameProcessed)
@@ -272,6 +260,22 @@ UserInputService.InputBegan:Connect(function(Input, GameProcessed)
         setfflag("NextGenReplicatorEnabledWrite4", "False")
     end
 end)
+
+--=========================--
+--      FAST SPAWN LOOP    --
+--=========================--
+
+if not getgenv().Loaded_FIN then
+    RunService.RenderStepped:Connect(function()
+        if getgenv().FastSpawn and LocalPlayer.PlayerGui.RoactUI:FindFirstChild("MainMenu") then
+            FrameWork.HL.Call("@SpawnHandlerClient", "spawnCharacter", true)
+        end
+    end)
+end
+
+--=========================--
+--       EXECUTION FLAG    --
+--=========================--
 
 getgenv().EXECUTED = true
 getgenv().Loaded_FIN = true
