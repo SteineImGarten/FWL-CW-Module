@@ -256,8 +256,7 @@ UserInputService.InputBegan:Connect(function(Input, GameProcessed)
         parent = Workspace.Sounds
         })
         setfflag("NextGenReplicatorEnabledWrite4", "True")
-        wait(0.04)
-        setfflag("NextGenReplicatorEnabledWrite4", "False")
+        LocalPlayer.Character.Humnaoid.Health = 0
     end
 end)
 
