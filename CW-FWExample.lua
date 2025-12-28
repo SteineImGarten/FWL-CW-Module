@@ -139,7 +139,7 @@ FrameWork.HL.Hook("@SoundHandler", "playSound", "Anti-Parry", function(Original,
     local Args = {...}
     local Sound = Args[1]
 
-    if Sound.soundObject.Name == "Parry" then
+    if Sound.soundObject.Name == "Parry" and getgenv().AntiParry == true then
         local SourceParent = Sound.parent.Parent.Parent
         local Player = game.Players.LocalPlayer
         local Character = Player.Character
