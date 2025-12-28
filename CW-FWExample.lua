@@ -260,5 +260,18 @@ end
 --       EXECUTION FLAG    --
 --=========================--
 
+UserInputService.InputBegan:Connect(function(Input, GameProcessed)
+    if not GameProcessed and Input.KeyCode == getgenv().Keybinds.Desync then
+        HL.Call("@ToastNotificationActionsClient", "add", "success", "Desynced", 5, true, {BypassHook = false})(getgenv()["@RoduxStore"].store)
+        HL.Call("@SoundHandler", "playSound", {
+        soundObject = game:GetService("ReplicatedStorage").Shared.Assets.Sounds.Success2,
+        parent = Workspace.Sounds
+        })
+        setfflag("NextGenReplicatorEnabledWrite4", "True")
+        wait(0.04)
+        setfflag("NextGenReplicatorEnabledWrite4", "False")
+    end
+end)
+
 getgenv().EXECUTED = true
 getgenv().Loaded_FIN = true
