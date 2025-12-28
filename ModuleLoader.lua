@@ -207,8 +207,6 @@ Loader.Call = function(ModuleKey, FunctionName, ...)
 end
 
 Loader.Hook = function(ModuleKey, FunctionName, HookID, HookFunc, Config)
-    
-    
     if type(HookFunc) ~= "function" and type(HookID) == "function" then
         HookFunc, Config = HookID, HookFunc
         HookID = "Default"
@@ -223,7 +221,7 @@ Loader.Hook = function(ModuleKey, FunctionName, HookID, HookFunc, Config)
     end
 
     local OrigFunc = Mod[FunctionName]
-    if typeof(OrigFunc) ~= "function" then
+    if not OrigFunc or typeof(OrigFunc) ~= "function" then
         warn(("Function %s not found in module %s"):format(FunctionName, ModuleKey))
         return nil
     end
@@ -236,15 +234,30 @@ Loader.Hook = function(ModuleKey, FunctionName, HookID, HookFunc, Config)
     GlobalTable._HookRegistry[ModuleKey] = GlobalTable._HookRegistry[ModuleKey] or {}
     GlobalTable._HookRegistry[ModuleKey][FunctionName] = GlobalTable._HookRegistry[ModuleKey][FunctionName] or {}
 
-    for ID, Data in pairs(GlobalTable._HookRegistry[ModuleKey][FunctionName]) do
-        Data.Active = false
+    if GlobalTable._HookRegistry[ModuleKey][FunctionName][HookID] then
+        warn(("Hook with ID %s already exists for function %s in module %s"):format(HookID, FunctionName, ModuleKey))
     end
 
     GlobalTable._HookRegistry[ModuleKey][FunctionName][HookID] = {
         Func = HookFunc,
         Active = true,
-        Config = Config
+        Config = Config,
+        Priority = Config.Priority or 0
     }
+
+    local function SafeCall(Func, ...)
+        if type(Func) == "function" then
+            local success, result = pcall(Func, ...)
+            if not success then
+                warn(("Error calling function: %s"):format(tostring(result)))
+                return nil
+            end
+            return result
+        else
+            warn("Attempted to call a nil or non-function value")
+            return nil
+        end
+    end
 
     local function Wrapper(...)
         local ActiveHookData
@@ -254,10 +267,9 @@ Loader.Hook = function(ModuleKey, FunctionName, HookID, HookFunc, Config)
                 break
             end
         end
-        local Original = Mod._OriginalFunctions[FunctionName]
 
         if not ActiveHookData then
-            return Original(...)
+            return SafeCall(OrigFunc, ...)
         end
 
         local CFG = ActiveHookData.Config or {}
@@ -268,16 +280,9 @@ Loader.Hook = function(ModuleKey, FunctionName, HookID, HookFunc, Config)
             print(("--- Spy Hook: %s -> %s [ID=%s] ---"):format(ModuleKey, FunctionName, HookID))
             PrintArgs(Args)
 
-            local Ok, CustomRet
-            if type(HookFn) == "function" then
-                Ok, CustomRet = pcall(HookFn, Original, table.unpack(Args))
-                if not Ok then
-                    warn(("Spy-hook function error on %s -> %s: %s"):format(ModuleKey, FunctionName, tostring(CustomRet)))
-                    CustomRet = nil
-                end
-            end
+            local CustomRet = SafeCall(HookFn, OrigFunc, table.unpack(Args))
 
-            local Ret = Original(table.unpack(Args))
+            local Ret = SafeCall(OrigFunc, table.unpack(Args))
 
             PrintReturn(Ret)
 
@@ -288,11 +293,7 @@ Loader.Hook = function(ModuleKey, FunctionName, HookID, HookFunc, Config)
             return Ret
         end
 
-        if type(HookFn) == "function" then
-            return HookFn(Original, ...)
-        else
-            return Original(...)
-        end
+        return SafeCall(HookFn, OrigFunc, ...)
     end
 
     Mod[FunctionName] = Wrapper
@@ -301,7 +302,6 @@ Loader.Hook = function(ModuleKey, FunctionName, HookID, HookFunc, Config)
         print(("Hook applied: %s -> %s [ID=%s, Active]"):format(ModuleKey, FunctionName, HookID))
     end
 
-    
     return OrigFunc
 end
 
@@ -406,22 +406,7 @@ Loader.Get = function(Name)
     local Mod = GlobalTable[Name] or GlobalTable["@" .. Name]
 
     if not Mod then
-        local found = {}
-        for key, value in pairs(GlobalTable) do
-            if type(key) == "string" and key:lower():find("utility") then
-                table.insert(found, key)
-            end
-        end
-
-        if #found > 0 then
-            print("Found modules with 'Utility' in the name:")
-            for _, key in ipairs(found) do
-                print(" - " .. key)
-            end
-        else
-            warn(("Module not found: %s"):format(Name))
-        end
-
+        warn(("Module not found: %s"):format(Name))
         return nil
     end
 
