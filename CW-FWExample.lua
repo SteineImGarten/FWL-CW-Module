@@ -1,4 +1,4 @@
----=========================---
+--=========================--
 --     ROBLOX FRAMEWORK    --
 --=========================--
 
@@ -86,13 +86,15 @@ end)
 -- Silent Aim
 
 FrameWork.HL.Hook("@RangedWeaponClient", "cancelReload", "SilentAimCancel", function(Original, ...)
-    return
+    if getgenv().NoReloadCancel == true then
+        return
+    end
 end, { Spy = false })
 
 FrameWork.HL.Hook("@RangedWeaponHandler", "calculateFireDirection", "SilentAim", function(Original, ...)
     local Ranged, MetaData = FrameWork.RangedWeapon()
     local Args = {...}
-    if typeof(Args[1]) == "CFrame" then
+    if typeof(Args[1]) == "CFrame" and getgenv().SilentAim == true then then
         local Speed = MetaData._itemConfig.speed
         local Gravity = MetaData._itemConfig.gravity
         local Origin = LocalPlayer.Character.HumanoidRootPart.Position
