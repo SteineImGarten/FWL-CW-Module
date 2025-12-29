@@ -1,4 +1,4 @@
---=========================--
+---=========================---
 --     ROBLOX FRAMEWORK    --
 --=========================--
 
@@ -208,7 +208,7 @@ local FlyEnabled = false
 UserInputService.InputBegan:Connect(function(input, processed)
     if processed then return end
 
-    if input.KeyCode == getgenv().Keybinds.Fly then
+    if input.KeyCode == getgenv().Keybinds.Fly and getgenv().Fly == true then
         FlyEnabled = not FlyEnabled
         local HRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
         if not HRP then return end
