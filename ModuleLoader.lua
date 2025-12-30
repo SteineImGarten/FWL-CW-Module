@@ -234,23 +234,17 @@ Loader.Hook = function(ModuleKey, FunctionName, HookID, HookFunc, Config)
     GlobalTable._HookRegistry[ModuleKey] = GlobalTable._HookRegistry[ModuleKey] or {}
     GlobalTable._HookRegistry[ModuleKey][FunctionName] = GlobalTable._HookRegistry[ModuleKey][FunctionName] or {}
 
+    -- Replace old hook with the same ID
     GlobalTable._HookRegistry[ModuleKey][FunctionName][HookID] = {
         Func = HookFunc,
         Active = true,
         Config = Config,
         Priority = Config.Priority or 0
     }
-    
+
     if Debug then
         print(("Hook registered/replaced: %s -> %s [ID=%s]"):format(ModuleKey, FunctionName, HookID))
     end
-
-    GlobalTable._HookRegistry[ModuleKey][FunctionName][HookID] = {
-        Func = HookFunc,
-        Active = true,
-        Config = Config,
-        Priority = Config.Priority or 0
-    }
 
     local function SafeCall(Func, ...)
         if type(Func) == "function" then
@@ -267,40 +261,32 @@ Loader.Hook = function(ModuleKey, FunctionName, HookID, HookFunc, Config)
     end
 
     local function Wrapper(...)
-        local ActiveHookData
-        for _, HookData in pairs(GlobalTable._HookRegistry[ModuleKey][FunctionName]) do
-            if HookData.Active then
-                ActiveHookData = HookData
-                break
-            end
-        end
+        local HookData = GlobalTable._HookRegistry[ModuleKey][FunctionName][HookID]
+        if HookData and HookData.Active then
+            local CFG = HookData.Config or {}
+            local HookFn = HookData.Func
 
-        if not ActiveHookData then
+            if CFG.Spy then
+                local Args = {...}
+                print(("--- Spy Hook: %s -> %s [ID=%s] ---"):format(ModuleKey, FunctionName, HookID))
+                PrintArgs(Args)
+
+                local CustomRet = SafeCall(HookFn, OrigFunc, table.unpack(Args))
+                local Ret = SafeCall(OrigFunc, table.unpack(Args))
+
+                PrintReturn(Ret)
+
+                if CustomRet ~= nil and CFG.OverrideReturn then
+                    return CustomRet
+                end
+
+                return Ret
+            end
+
+            return SafeCall(HookFn, OrigFunc, ...)
+        else
             return SafeCall(OrigFunc, ...)
         end
-
-        local CFG = ActiveHookData.Config or {}
-        local HookFn = ActiveHookData.Func
-
-        if CFG.Spy then
-            local Args = {...}
-            print(("--- Spy Hook: %s -> %s [ID=%s] ---"):format(ModuleKey, FunctionName, HookID))
-            PrintArgs(Args)
-
-            local CustomRet = SafeCall(HookFn, OrigFunc, table.unpack(Args))
-
-            local Ret = SafeCall(OrigFunc, table.unpack(Args))
-
-            PrintReturn(Ret)
-
-            if CustomRet ~= nil and CFG.OverrideReturn then
-                return CustomRet
-            end
-
-            return Ret
-        end
-
-        return SafeCall(HookFn, OrigFunc, ...)
     end
 
     Mod[FunctionName] = Wrapper
