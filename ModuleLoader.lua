@@ -234,8 +234,15 @@ Loader.Hook = function(ModuleKey, FunctionName, HookID, HookFunc, Config)
     GlobalTable._HookRegistry[ModuleKey] = GlobalTable._HookRegistry[ModuleKey] or {}
     GlobalTable._HookRegistry[ModuleKey][FunctionName] = GlobalTable._HookRegistry[ModuleKey][FunctionName] or {}
 
-    if GlobalTable._HookRegistry[ModuleKey][FunctionName][HookID] then
-        warn(("Hook with ID %s already exists for function %s in module %s"):format(HookID, FunctionName, ModuleKey))
+    GlobalTable._HookRegistry[ModuleKey][FunctionName][HookID] = {
+        Func = HookFunc,
+        Active = true,
+        Config = Config,
+        Priority = Config.Priority or 0
+    }
+    
+    if Debug then
+        print(("Hook registered/replaced: %s -> %s [ID=%s]"):format(ModuleKey, FunctionName, HookID))
     end
 
     GlobalTable._HookRegistry[ModuleKey][FunctionName][HookID] = {
