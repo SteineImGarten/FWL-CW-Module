@@ -1,4 +1,4 @@
-------------
+----
 setthreadidentity(2)
 
 local GlobalTable = getgenv()
