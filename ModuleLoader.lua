@@ -260,6 +260,8 @@ Loader.Hook = function(ModuleKey, FunctionName, HookID, HookFunc, Config)
         end
     end
 
+    local LastSpyPrintTime = {}
+    
     local function Wrapper(...)
         local ActiveHookData
         for _, HookData in pairs(GlobalTable._HookRegistry[ModuleKey][FunctionName]) do
@@ -268,32 +270,42 @@ Loader.Hook = function(ModuleKey, FunctionName, HookID, HookFunc, Config)
                 break
             end
         end
-
+    
         if not ActiveHookData then
             return SafeCall(OrigFunc, ...)
         end
-
+    
         local CFG = ActiveHookData.Config or {}
         local HookFn = ActiveHookData.Func
-
+        local HookID = ActiveHookData.HookID or "Default"
+        local key = ModuleKey.."."..FunctionName.."."..HookID
+    
         if CFG.Spy then
             local Args = {...}
-            print(("--- Spy Hook: %s -> %s [ID=%s] ---"):format(ModuleKey, FunctionName, HookID))
-            PrintArgs(Args)
-
-            local CustomRet = SafeCall(HookFn, OrigFunc, table.unpack(Args))
-
-            local Ret = SafeCall(OrigFunc, table.unpack(Args))
-
-            PrintReturn(Ret)
-
-            if CustomRet ~= nil and CFG.OverrideReturn then
-                return CustomRet
+            local now = tick()
+            local delay = CFG.SpyDelay or 0
+            LastSpyPrintTime[key] = LastSpyPrintTime[key] or 0
+    
+            if now - LastSpyPrintTime[key] >= delay then
+                LastSpyPrintTime[key] = now
+    
+                print(("--- Spy Hook: %s -> %s [ID=%s] ---"):format(ModuleKey, FunctionName, HookID))
+                PrintArgs(Args)
+    
+                local CustomRet = SafeCall(HookFn, OrigFunc, table.unpack(Args))
+                local Ret = SafeCall(OrigFunc, table.unpack(Args))
+                PrintReturn(Ret)
+    
+                if CustomRet ~= nil and CFG.OverrideReturn then
+                    return CustomRet
+                end
+    
+                return Ret
+            else
+                return SafeCall(OrigFunc, ...)
             end
-
-            return Ret
         end
-
+    
         return SafeCall(HookFn, OrigFunc, ...)
     end
 
