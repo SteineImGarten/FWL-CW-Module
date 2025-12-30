@@ -206,6 +206,8 @@ Loader.Call = function(ModuleKey, FunctionName, ...)
     return Func(table.unpack(Args))
 end
 
+----
+
 Loader.Hook = function(ModuleKey, FunctionName, HookID, HookFunc, Config)
     if type(HookFunc) ~= "function" and type(HookID) == "function" then
         HookFunc, Config = HookID, HookFunc
@@ -220,22 +222,20 @@ Loader.Hook = function(ModuleKey, FunctionName, HookID, HookFunc, Config)
         return nil
     end
 
-    if type(Module[FunctionName]) ~= "function" then
+    local OrigFunc = Module[FunctionName]
+    if not OrigFunc or type(OrigFunc) ~= "function" then
         warn(("Function %s not found in module %s"):format(FunctionName, ModuleKey))
         return nil
     end
 
     Module._OriginalFunctions = Module._OriginalFunctions or {}
-    Module._IsHookWrapped = Module._IsHookWrapped or {}
+    if not Module._OriginalFunctions[FunctionName] then
+        Module._OriginalFunctions[FunctionName] = OrigFunc
+    end
+
     GlobalTable._HookRegistry = GlobalTable._HookRegistry or {}
     GlobalTable._HookRegistry[ModuleKey] = GlobalTable._HookRegistry[ModuleKey] or {}
     GlobalTable._HookRegistry[ModuleKey][FunctionName] = GlobalTable._HookRegistry[ModuleKey][FunctionName] or {}
-
-    if not Module._OriginalFunctions[FunctionName] then
-        Module._OriginalFunctions[FunctionName] = Module[FunctionName]
-    end
-
-    local OriginalFunction = Module._OriginalFunctions[FunctionName]
 
     GlobalTable._HookRegistry[ModuleKey][FunctionName][HookID] = {
         Func = HookFunc,
@@ -244,17 +244,25 @@ Loader.Hook = function(ModuleKey, FunctionName, HookID, HookFunc, Config)
         Priority = Config.Priority or 0
     }
 
+    local function SafeCall(Func, ...)
+        if type(Func) ~= "function" then
+            warn("Attempted to call a nil or non-function value")
+            return nil
+        end
+        local success, result = pcall(Func, ...)
+        if not success then
+            warn(("Error calling function: %s"):format(tostring(result)))
+            return nil
+        end
+        return result
+    end
+
+    if not Module._IsHookWrapped then
+        Module._IsHookWrapped = {}
+    end
+
     if not Module._IsHookWrapped[FunctionName] then
         Module._IsHookWrapped[FunctionName] = true
-
-        local function SafeCall(Function, ...)
-            local Success, Result = pcall(Function, ...)
-            if not Success then
-                warn(("Hook error: %s"):format(tostring(Result)))
-                return nil
-            end
-            return Result
-        end
 
         Module[FunctionName] = function(...)
             local Hooks = GlobalTable._HookRegistry[ModuleKey][FunctionName]
@@ -271,47 +279,36 @@ Loader.Hook = function(ModuleKey, FunctionName, HookID, HookFunc, Config)
                 return (A.Priority or 0) > (B.Priority or 0)
             end)
 
-            local Result
-            local OriginalCalled = false
-
             for _, Hook in ipairs(ActiveHooks) do
                 local HookConfig = Hook.Config or {}
+                local HookReturn = SafeCall(Hook.Func, OrigFunc, table.unpack(Args))
 
                 if HookConfig.Spy then
-                    print(("--- Spy Hook: %s -> %s ---"):format(ModuleKey, FunctionName))
+                    print(("--- Spy Hook: %s -> %s [ID=%s] ---"):format(ModuleKey, FunctionName, HookID))
                     PrintArgs(Args)
-
-                    local HookReturn = SafeCall(Hook.Func, OriginalFunction, table.unpack(Args))
-                    Result = SafeCall(OriginalFunction, table.unpack(Args))
-                    OriginalCalled = true
-
-                    PrintReturn(Result)
-
+                    PrintReturn(HookReturn or SafeCall(OrigFunc, table.unpack(Args)))
+                    
                     if HookReturn ~= nil and HookConfig.OverrideReturn then
                         return HookReturn
                     end
                 else
-                    local HookReturn = SafeCall(Hook.Func, OriginalFunction, table.unpack(Args))
                     if HookReturn ~= nil then
                         return HookReturn
                     end
                 end
             end
 
-            if not OriginalCalled then
-                return SafeCall(OriginalFunction, table.unpack(Args))
-            end
-
-            return Result
+            return SafeCall(OrigFunc, table.unpack(Args))
         end
     end
 
     if Debug then
-        print(("Hook registered: %s -> %s [ID=%s]"):format(ModuleKey, FunctionName, HookID))
+        print(("Hook applied: %s -> %s [ID=%s, Active]"):format(ModuleKey, FunctionName, HookID))
     end
 
-    return OriginalFunction
+    return OrigFunc
 end
+
 
 Loader.UnHook = function(ModuleKey, FunctionName, HookID)
     local Mod = GlobalTable[ModuleKey]
