@@ -100,7 +100,7 @@ FrameWork.HL.Hook("@RangedWeaponHandler", "calculateFireDirection", "SilentAim",
         local Origin = LocalPlayer.Character.HumanoidRootPart.Position
         local Target = FrameWork.MouseTarget(nil, getgenv().FOV)
         if Target then
-            Args[1] = FrameWork.Kalman.Predict(Target.Character:FindFirstChild(getgenv().HitPart), Origin, Speed, true, Gravity)
+            Args[1] = FrameWork.Kalman.Predict(Target.Character:FindFirstChild(getgenv().HitPart), Origin, Speed, false, Gravity)
         end
     end
     return Original(table.unpack(Args))
