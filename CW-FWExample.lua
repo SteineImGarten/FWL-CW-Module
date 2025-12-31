@@ -196,9 +196,9 @@ FrameWork.ModRanged("minSpread", 0)
 FrameWork.ModRanged("maxSpread", 0)
 FrameWork.ModRanged("gravity", Vector3.new())
 FrameWork.ModRanged("maxDistance", 10000)
-FrameWork.ModRanged("reloadWalkSpeedMultiplier", 1)
-FrameWork.ModRanged("chargeOnDuration", 0)
-FrameWork.ModRanged("chargeOffDuration", 0)
+FrameWork.ModRanged("reloadWalkSpeedMultiplier", 2)
+FrameWork.ModRanged("chargeOnDuration", 0.01)
+FrameWork.ModRanged("chargeOffDuration", 0.01)
 FrameWork.ModRanged("speed", 350)
 
 --=========================--
