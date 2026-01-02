@@ -1,54 +1,63 @@
 local HL = loadstring(game:HttpGet("https://raw.githubusercontent.com/SteineImGarten/FWL-CW-Module/refs/heads/main/ModuleLoader.lua"))()
 local Kalman = loadstring(game:HttpGet("https://raw.githubusercontent.com/SteineImGarten/FWL-CW-Module/refs/heads/main/Kalman.lua"))()
---
+
 local Modules = { Name = {}, Id = {} }
 local UtilityIds = {}
 local WeaponIds = {}
 
-local RangedDefault = {}
 local WeaponOrder = {}
-local Ranged = {}
+local AllItemsDefault = {}
 
-local function WeaponData(ItemName, ItemId)
+local function ItemData(ItemName, ItemId)
     local Key = ItemName and ItemName:lower():gsub("%s+", "")
-    if Key and not WeaponIds[Key] then return end
-    return (Key and HL.Get("@WeaponMetadata")[WeaponIds[Key]]) or HL.Get("@WeaponMetadata")[ItemId]
-end
+    if Key and not WeaponIds[Key] and not UtilityIds[Key] then return end
 
-local function UtilityData(ItemName, ItemId)
-    local Key = ItemName and ItemName:lower():gsub("%s+", "")
-    if Key and not UtilityIds[Key] then return end
-    return (Key and HL.Get("@UtilityMetadata")[UtilityIds[Key]]) or HL.Get("@UtilityMetadata")[ItemId]
+    if Key and WeaponIds[Key] then
+        return HL.Get("@WeaponMetadata")[WeaponIds[Key]]
+    elseif Key and UtilityIds[Key] then
+        return HL.Get("@UtilityMetadata")[UtilityIds[Key]]
+    else
+        return HL.Get("@WeaponMetadata")[ItemId] or HL.Get("@UtilityMetadata")[ItemId]
+    end
 end
 
 spawn(function()
     repeat task.wait(0.05) until getgenv().LOAD_FINISHED
-        
+
     for Key, Value in HL.Get("@UtilityIds") do
         UtilityIds[Key:lower()] = Value
     end
-        
+
     for Key, Value in HL.Get("@WeaponIds") do
         WeaponIds[Key:lower()] = Value
     end
-    
+
     for i, v in HL.Get("@WeaponsInOrder") do
         WeaponOrder[v.id] = v
     end
 
-    for i, v in HL.Get("@WeaponIds") do
-        if WeaponOrder[v] and WeaponOrder[v].class == "ranged" then
-            table.insert(Ranged, i)
+    for Key, Id in pairs(WeaponIds) do
+        local Meta = HL.Get("@WeaponMetadata")[Id]
+        if Meta then
+            table.insert(AllItemsDefault, {Name = Key, OG = table.clone(Meta)})
         end
     end
 
-    for i,v in Ranged do
-    	local Meta = WeaponData(v) or UtilityData(v)
-    	if Meta then
-    		table.insert(RangedDefault,{Name = v,OG = table.clone(Meta)})
-    	end
+    for Key, Id in pairs(UtilityIds) do
+        local Meta = HL.Get("@UtilityMetadata")[Id]
+        if Meta then
+            table.insert(AllItemsDefault, {Name = Key, OG = table.clone(Meta)})
+        end
     end
 end)
+
+local function NormalizeKey(str)
+    return str:lower():gsub("%s+", "")
+end
+
+local function WaitForItems()
+    repeat task.wait(0.05) until #AllItemsDefault > 0
+end
 
 local function MeleeWeapon(Player)
     local Players = game:GetService("Players")
@@ -81,44 +90,47 @@ local function RangedWeapon(Player)
 end
 
 local function ModRanged(Name, Value)
-    for i, v in RangedDefault do
-        local Meta = WeaponData(v.Name) or UtilityData(v.Name)
-        if Meta[Name] then
+    for _, v in AllItemsDefault do
+        local Meta = ItemData(v.Name)
+        if Meta and Meta[Name] then
             Meta[Name] = Value
         end
     end
 end
 
-local function NormalizeKey(str)
-    return str:lower():gsub("%s+", "")
-end
-
-local function WaitForRangedDefault()
-    repeat task.wait(0.05) until #RangedDefault > 0
-end
-
 local function PrintWepStats(Player)
-    WaitForRangedDefault()
+    WaitForItems()
 
-    local Tool, WeaponObj = RangedWeapon(Player)
+    local Players = game:GetService("Players")
+    local Player = Player or Players.LocalPlayer
+    local Character = Player.Character or Player.CharacterAdded:Wait()
+
+    local Tool
+    for _, item in Character:GetChildren() do
+        if item:IsA("Tool") and item:GetAttribute("ItemType") == "weapon" then
+            Tool = item
+            break
+        end
+    end
+
     if not Tool then
-        warn("No ranged weapon equipped!")
+        warn("No weapon equipped!")
         return
     end
 
     local WeaponKey = NormalizeKey(Tool.Name)
     print("Stats for currently held weapon: " .. Tool.Name)
 
-    for _, weapon in ipairs(RangedDefault) do
-        if NormalizeKey(weapon.Name) == WeaponKey then
-            for statName, statValue in pairs(weapon.OG) do
+    for _, item in ipairs(AllItemsDefault) do
+        if NormalizeKey(item.Name) == WeaponKey then
+            for statName, statValue in pairs(item.OG) do
                 print("  " .. statName .. " : " .. tostring(statValue))
             end
             return
         end
     end
 
-    warn("Weapon stats not found in RangedDefault: " .. Tool.Name)
+    warn("Weapon stats not found in AllItemsDefault: " .. Tool.Name)
 end
 
 local function PlayerState()
@@ -246,10 +258,9 @@ end
 return {
     Kalman = Kalman,
     HL = HL,
+    ItemData = ItemData,
     ModRanged = ModRanged,
     PrintWepStats = PrintWepStats,
-    WeaponData = WeaponData,
-    UtilityData = UtilityData,
     MeleeWeapon = MeleeWeapon,
     RangedWeapon = RangedWeapon,
     PlayerState = PlayerState,
