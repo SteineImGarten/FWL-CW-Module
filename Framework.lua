@@ -89,13 +89,56 @@ local function RangedWeapon(Player)
     end
 end
 
-local function ModRanged(Name, Value)
-    for _, v in AllItemsDefault do
-        local Meta = ItemData(v.Name)
-        if Meta and Meta[Name] then
-            Meta[Name] = Value
+local function ModWeapon(StatsTable, WeaponName)
+    WaitForItems(
+
+    local Players = game:GetService("Players")
+    local LocalPlayer = Players.LocalPlayer
+    local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+
+    local Tool
+    if WeaponName then
+        local NormWeaponName = NormalizeKey(WeaponName)
+        for _, item in Character:GetChildren() do
+            if item:IsA("Tool") and item:GetAttribute("ItemType") == "weapon" and NormalizeKey(item.Name) == NormWeaponName then
+                Tool = item
+                break
+            end
+        end
+        if not Tool then
+            warn("Weapon not found: " .. WeaponName)
+            return
+        end
+    else
+        for _, item in Character:GetChildren() do
+            if item:IsA("Tool") and item:GetAttribute("ItemType") == "weapon" then
+                Tool = item
+                break
+            end
+        end
+        if not Tool then
+            warn("No weapon currently equipped!")
+            return
         end
     end
+
+    local WeaponKey = NormalizeKey(Tool.Name)
+
+    for _, item in ipairs(AllItemsDefault) do
+        if NormalizeKey(item.Name) == WeaponKey then
+            for statName, statValue in pairs(StatsTable) do
+                if item.OG[statName] ~= nil then
+                    item.OG[statName] = statValue
+                    print("Modified " .. statName .. " of " .. Tool.Name .. " to " .. tostring(statValue))
+                else
+                    warn("Stat not found: " .. statName .. " for weapon " .. Tool.Name)
+                end
+            end
+            return
+        end
+    end
+
+    warn("Weapon metadata not found for: " .. Tool.Name)
 end
 
 local function PrintWepStats(Player)
