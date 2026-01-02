@@ -98,6 +98,18 @@ local function ModRanged(Name, Value)
     end
 end
 
+local function PrintTable(tbl, indent)
+    indent = indent or ""
+    for key, value in pairs(tbl) do
+        if type(value) == "table" then
+            print(indent .. key .. " :")
+            PrintTable(value, indent .. "  ")
+        else
+            print(indent .. key .. " : " .. tostring(value))
+        end
+    end
+end
+
 local function PrintWepStats(Player)
     WaitForItems()
 
@@ -123,9 +135,7 @@ local function PrintWepStats(Player)
 
     for _, item in ipairs(AllItemsDefault) do
         if NormalizeKey(item.Name) == WeaponKey then
-            for statName, statValue in pairs(item.OG) do
-                print("  " .. statName .. " : " .. tostring(statValue))
-            end
+            PrintTable(item.OG, "  ")
             return
         end
     end
