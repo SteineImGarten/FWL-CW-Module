@@ -12,6 +12,8 @@ local Workspace = game:GetService("Workspace")
 local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
 
+getgenv().RecentParryPlayers = getgenv().RecentParryPlayers or {}
+
 --=========================--
 --      GLOBAL FLAGS       --
 --=========================--
@@ -135,36 +137,51 @@ FrameWork.HL.Hook("@RagdollHandlerClient", "toggleRagdoll", function(Original, .
     return Original(...)
 end)
 
+-- Network 
+
+FrameWork.HL.Hook("@Network", "FireServer", "RangeExpander", function(Original, ...)
+    local Args = {...}
+
+    if Args[2] == "MeleeDamage" then
+        local target = Args[4]
+
+        if target and target.Parent then
+            local playerModel = target.Parent
+
+            if getgenv().RecentParryPlayers and getgenv().RecentParryPlayers[playerModel] then
+                print("Blocked melee damage to recently parried player:", playerModel.Name)
+                return
+            end
+        end
+    end
+
+    return Original(table.unpack(Args))
+end, { Spy = false })
+
 -- Anti-Parry
 
 FrameWork.HL.Hook("@SoundHandler", "playSound", "Anti-Parry", function(Original, ...)
     local Args = {...}
-    local Sound = Args[1]
+    local data = Args[1]
 
-    if Sound.soundObject.Name == "Parry" and getgenv().AntiParry == true then
-        local SourceParent = Sound.parent.Parent.Parent
-        local Player = game.Players.LocalPlayer
-        local Character = Player.Character
+    if data then
+        local sound = data.soundObject
+        local playerModel = data.parent and data.parent.Parent and data.parent.Parent.Parent
 
-        if SourceParent ~= Character then
-            local EquippedTools = {}
-            for _, Tool in ipairs(Character:GetChildren()) do
-                if Tool:IsA("Tool") and Tool:FindFirstChild("Hitboxes") then
-                    table.insert(EquippedTools, Tool)
-                    Tool.Parent = Player.Backpack
-                end
+        if sound and sound.Name == "Parry" and playerModel then
+            local localPlayer = game.Players.LocalPlayer
+
+            if playerModel ~= localPlayer.Character then
+                getgenv().RecentParryPlayers[playerModel] = true
+
+                task.delay(0.2, function()
+                    getgenv().RecentParryPlayers[playerModel] = nil
+                end)
             end
-
-            task.spawn(function()
-                for _, Tool in ipairs(EquippedTools) do
-                    Tool.Parent = Character
-                end
-            end)
         end
     end
 
     return Original(...)
-
 end, { Spy = false })
 
 -- Stamina Mods
