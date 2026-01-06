@@ -172,6 +172,7 @@ FrameWork.HL.Hook("@SoundHandler", "playSound", "Anti-Parry", function(Original,
             local localPlayer = game.Players.LocalPlayer
 
             if playerModel ~= localPlayer.Character then
+                print("Added Player:", playerModel.Name)
                 getgenv().RecentParryPlayers[playerModel] = true
 
                 task.delay(0.2, function()
