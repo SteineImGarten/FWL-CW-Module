@@ -164,7 +164,7 @@ FrameWork.HL.Hook("@SoundHandler", "playSound", "Anti-Parry", function(Original,
     local Args = {...}
     local data = Args[1]
 
-    if data.soundObject == "Parry" then
+    if data.soundObject.Name == "Parry" then
         local sound = data.soundObject
         local playerModel = data.parent and data.parent.Parent and data.parent.Parent.Parent
 
