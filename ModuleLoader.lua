@@ -171,7 +171,6 @@ Loader.Load = function()
 end
 
 Loader.Call = function(ModuleKey, FunctionName, ...)
-    
 
     local Args = {...}
     local BypassHook = false
@@ -203,17 +202,18 @@ Loader.Call = function(ModuleKey, FunctionName, ...)
         return nil
     end
     
-    
     return Func(table.unpack(Args))
 end
 
 Loader.Hook = function(ModuleKey, FunctionName, HookID, HookFunc, Config)
+    
     if type(HookFunc) ~= "function" and type(HookID) == "function" then
         HookFunc, Config = HookID, HookFunc
         HookID = "Default"
     end
 
     Config = Config or {}
+    HookID = HookID or "Default"
 
     local Mod = GlobalTable[ModuleKey]
     if not Mod then
@@ -222,7 +222,7 @@ Loader.Hook = function(ModuleKey, FunctionName, HookID, HookFunc, Config)
     end
 
     local OrigFunc = Mod[FunctionName]
-    if not OrigFunc or typeof(OrigFunc) ~= "function" then
+    if type(OrigFunc) ~= "function" then
         warn(("Function %s not found in module %s"):format(FunctionName, ModuleKey))
         return nil
     end
@@ -232,90 +232,107 @@ Loader.Hook = function(ModuleKey, FunctionName, HookID, HookFunc, Config)
         Mod._OriginalFunctions[FunctionName] = OrigFunc
     end
 
+    GlobalTable._HookRegistry = GlobalTable._HookRegistry or {}
     GlobalTable._HookRegistry[ModuleKey] = GlobalTable._HookRegistry[ModuleKey] or {}
-    GlobalTable._HookRegistry[ModuleKey][FunctionName] = GlobalTable._HookRegistry[ModuleKey][FunctionName] or {}
+    GlobalTable._HookRegistry[ModuleKey][FunctionName] =
+        GlobalTable._HookRegistry[ModuleKey][FunctionName] or {}
 
-    if GlobalTable._HookRegistry[ModuleKey][FunctionName][HookID] then
-        warn(("Hook with ID %s already exists for function %s in module %s"):format(HookID, FunctionName, ModuleKey))
+    local HookTable = GlobalTable._HookRegistry[ModuleKey][FunctionName]
+
+    if HookTable[HookID] then
+        HookTable[HookID].Func = HookFunc
+        HookTable[HookID].Config = Config
+        HookTable[HookID].Priority = Config.Priority or 0
+        HookTable[HookID].Active = true
+
+        if Debug then
+            print(("Hook overridden: %s -> %s [ID=%s]")
+                :format(ModuleKey, FunctionName, HookID))
+        end
+
+        return Mod._OriginalFunctions[FunctionName]
     end
 
-    GlobalTable._HookRegistry[ModuleKey][FunctionName][HookID] = {
+    HookTable[HookID] = {
+        HookID = HookID,
         Func = HookFunc,
         Active = true,
         Config = Config,
         Priority = Config.Priority or 0
     }
 
+    Mod._HookWrapped = Mod._HookWrapped or {}
+
+    if Mod._HookWrapped[FunctionName] then
+        return Mod._OriginalFunctions[FunctionName]
+    end
+
+    Mod._HookWrapped[FunctionName] = true
+
     local function SafeCall(Func, ...)
-        if type(Func) == "function" then
-            local success, result = pcall(Func, ...)
-            if not success then
-                warn(("Error calling function: %s"):format(tostring(result)))
-                return nil
-            end
-            return result
-        else
-            warn("Attempted to call a nil or non-function value")
+        local ok, result = pcall(Func, ...)
+        if not ok then
+            warn(("Hook error: %s"):format(result))
             return nil
         end
+        return result
     end
 
     local LastSpyPrintTime = {}
-    
-    local function Wrapper(...)
-        local ActiveHookData
-        for _, HookData in pairs(GlobalTable._HookRegistry[ModuleKey][FunctionName]) do
-            if HookData.Active then
-                ActiveHookData = HookData
-                break
+
+    local function GetActiveHook()
+        local best
+        for _, hook in pairs(HookTable) do
+            if hook.Active then
+                if not best or hook.Priority > best.Priority then
+                    best = hook
+                end
             end
         end
-    
-        if not ActiveHookData then
-            return SafeCall(OrigFunc, ...)
+        return best
+    end
+
+    local function Wrapper(...)
+        local HookData = GetActiveHook()
+        if not HookData then
+            return SafeCall(Mod._OriginalFunctions[FunctionName], ...)
         end
-    
-        local CFG = ActiveHookData.Config or {}
-        local HookFn = ActiveHookData.Func
-        local HookID = ActiveHookData.HookID or "Default"
-        local key = ModuleKey.."."..FunctionName.."."..HookID
-    
+
+        local CFG = HookData.Config or {}
+        local HookFn = HookData.Func
+        local key = ModuleKey.."."..FunctionName.."."..HookData.HookID
+
         if CFG.Spy then
-            local Args = {...}
             local now = tick()
             local delay = CFG.SpyDelay or 0
             LastSpyPrintTime[key] = LastSpyPrintTime[key] or 0
-    
+
             if now - LastSpyPrintTime[key] >= delay then
                 LastSpyPrintTime[key] = now
-    
-                print(("--- Spy Hook: %s -> %s [ID=%s] ---"):format(ModuleKey, FunctionName, HookID))
-                PrintArgs(Args)
-    
-                local CustomRet = SafeCall(HookFn, OrigFunc, table.unpack(Args))
-                local Ret = SafeCall(OrigFunc, table.unpack(Args))
-                PrintReturn(Ret)
-    
-                if CustomRet ~= nil and CFG.OverrideReturn then
-                    return CustomRet
-                end
-    
-                return Ret
-            else
-                return SafeCall(OrigFunc, ...)
+
+                print(("--- Spy Hook: %s -> %s [ID=%s] ---")
+                    :format(ModuleKey, FunctionName, HookData.HookID))
+
+                PrintArgs({...})
             end
         end
-    
-        return SafeCall(HookFn, OrigFunc, ...)
+
+        local HookRet = SafeCall(HookFn, Mod._OriginalFunctions[FunctionName], ...)
+        if HookRet ~= nil and CFG.OverrideReturn then
+            return HookRet
+        end
+
+        return SafeCall(Mod._OriginalFunctions[FunctionName], ...)
     end
 
     Mod[FunctionName] = Wrapper
 
     if Debug then
-        print(("Hook applied: %s -> %s [ID=%s, Active]"):format(ModuleKey, FunctionName, HookID))
+        print(("Hook applied: %s -> %s [ID=%s]")
+            :format(ModuleKey, FunctionName, HookID))
     end
 
-    return OrigFunc
+    return Mod._OriginalFunctions[FunctionName]
 end
 
 Loader.UnHook = function(ModuleKey, FunctionName, HookID)
