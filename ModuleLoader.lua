@@ -1,4 +1,3 @@
-----
 setthreadidentity(2)
 
 local GlobalTable = getgenv()
@@ -317,7 +316,7 @@ Loader.Hook = function(ModuleKey, FunctionName, HookID, HookFunc, Config)
             end
         end
 
-        return SafeCall(HookFn, Original, ...)
+        return SafeCall(HookFn, Mod._OriginalFunctions[FunctionName], ...)
     end
 
     Mod[FunctionName] = Wrapper
