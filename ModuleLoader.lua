@@ -1,3 +1,4 @@
+----
 setthreadidentity(2)
 
 local GlobalTable = getgenv()
@@ -316,12 +317,7 @@ Loader.Hook = function(ModuleKey, FunctionName, HookID, HookFunc, Config)
             end
         end
 
-        local HookRet = SafeCall(HookFn, Mod._OriginalFunctions[FunctionName], ...)
-        if HookRet ~= nil and CFG.OverrideReturn then
-            return HookRet
-        end
-
-        return SafeCall(Mod._OriginalFunctions[FunctionName], ...)
+        return SafeCall(HookFn, Original, ...)
     end
 
     Mod[FunctionName] = Wrapper
