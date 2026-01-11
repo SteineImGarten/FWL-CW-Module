@@ -24,6 +24,12 @@ for _, CacheEntry in ipairs(GlobalTable._LoaderCache) do
 end
 
 local Debug = false
+local SpyEnabled = false
+local SpyConfig = {
+    Delay = 0,
+    LogReturns = true
+}
+
 GlobalTable = getgenv()
 GlobalTable._HookRegistry = GlobalTable._HookRegistry or {}
 
@@ -133,6 +139,65 @@ local function PrintReturn(Ret)
         print(("return: %s"):format(Format(Ret, 0, {})))
     else
         print(("return: %s"):format(Format(Ret)))
+    end
+end
+
+local SpyWrapped = {}
+
+local function WrapWithSpy(ModuleKey, Mod, FuncName)
+    if SpyWrapped[ModuleKey.."."..FuncName] then
+        return
+    end
+
+    local Original = Mod[FuncName]
+    if type(Original) ~= "function" then
+        return
+    end
+
+    SpyWrapped[ModuleKey.."."..FuncName] = true
+
+    local lastPrint = 0
+
+    Mod[FuncName] = function(...)
+        local now = tick()
+        if SpyEnabled and (now - lastPrint >= (SpyConfig.Delay or 0)) then
+            lastPrint = now
+
+            print(("=== [SPY] %s -> %s ==="):format(ModuleKey, FuncName))
+            PrintArgs({...})
+        end
+
+        local results = {Original(...)}
+
+        if SpyEnabled and SpyConfig.LogReturns then
+            PrintReturn(#results == 1 and results[1] or results)
+        end
+
+        return table.unpack(results)
+    end
+end
+
+local function ApplyGlobalSpy()
+    for ModuleKey, Mod in pairs(GlobalTable) do
+        if type(ModuleKey) == "string" and ModuleKey:sub(1,1) == "@" and type(Mod) == "table" then
+            for FuncName, Value in pairs(Mod) do
+                if type(Value) == "function" then
+                    WrapWithSpy(ModuleKey, Mod, FuncName)
+                end
+            end
+        end
+    end
+end
+
+Loader.Spy = function(State, Config)
+    SpyEnabled = State and true or false
+    SpyConfig = Config or SpyConfig
+
+    if SpyEnabled then
+        ApplyGlobalSpy()
+        print("[Loader] Global Spy ENABLED")
+    else
+        print("[Loader] Global Spy DISABLED")
     end
 end
 
