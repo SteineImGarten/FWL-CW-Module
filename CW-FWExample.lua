@@ -191,8 +191,8 @@ local DefaultStamina = FrameWork.HL.Call("@DefaultStaminaHandlerClient", "getDef
 FrameWork.HL.Call("@Stamina", "setBaseMaxStamina", DefaultStamina, 1500)
 FrameWork.HL.Call("@Stamina", "setStamina", DefaultStamina, 1)
 
-DefaultStamina.gainDelay = 0
-DefaultStamina.gainPerSecond = 250
+DefaultStamina.gainDelay = 0.15
+DefaultStamina.gainPerSecond = 50
 
 FrameWork.HL.Hook("@DefaultStaminaHandlerClient", "spendStamina", "ConfigMaxed", function(Original, Stamina)
     Stamina = 1
@@ -277,6 +277,16 @@ UserInputService.InputBegan:Connect(function(Input, GameProcessed)
             parent = Workspace.Sounds
             })
             setfflag("NextGenReplicatorEnabledWrite4", "True")
+        end
+    end
+end)
+
+UserInputService.InputBegan:Connect(function(Input, GameProcessed)
+    if not GameProcessed and Input.KeyCode == getgenv().Keybinds.SilentAim then
+        if getgenv().SilentAim == true then
+           getgenv().SilentAim = false
+        else 
+           getgenv().SilentAim = true
         end
     end
 end)
