@@ -1,7 +1,3 @@
---=========================--
---     ROBLOX FRAMEWORK    --
---=========================--
-
 local FrameWork = loadstring(game:HttpGet("https://raw.githubusercontent.com/SteineImGarten/FWL-CW-Module/refs/heads/main/Framework.lua"))()
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -14,16 +10,10 @@ local Camera = Workspace.CurrentCamera
 
 getgenv().RecentParryPlayers = getgenv().RecentParryPlayers or {}
 
---=========================--
---      GLOBAL FLAGS       --
---=========================--
 
 getgenv().EXECUTED = getgenv().EXECUTED or false
 getgenv().Loaded_FIN = getgenv().Loaded_FIN or false
 
---=========================--
---     FRAMEWORK INIT      --
---=========================--
 
 FrameWork.HL.Debug(true)
 FrameWork.HL.Global(getgenv())
@@ -34,9 +24,6 @@ FrameWork.HL.Folders({
 })
 FrameWork.HL.Load()
 
---=========================--
---       MISC FEATURES     --
---=========================--
 
 if not getgenv().EXECUTED then
     local FovCircle = Drawing.new("Circle")
@@ -45,7 +32,7 @@ if not getgenv().EXECUTED then
     FovCircle.Filled = false
     FovCircle.NumSides = 32
     FovCircle.Transparency = 0.4
-    FovCircle.Visible = true
+    FovCircle.Visible = false
 
     RunService.RenderStepped:Connect(function()
         local MousePos = UserInputService:GetMouseLocation()
@@ -53,9 +40,6 @@ if not getgenv().EXECUTED then
     end)
 end
 
---=========================--
---      HELPER FUNCTIONS   --
---=========================--
 
 local function GetHitParts(HitPosition)
     local Targets = {}
@@ -69,11 +53,6 @@ local function GetHitParts(HitPosition)
     return Targets
 end
 
---=========================--
---       HOOKS & MODS      --
---=========================--
-
--- Toast Notification Hook
 
 FrameWork.HL.Call("@ToastNotificationActionsClient", "add", "success", "Hook Finished", 5, true, {BypassHook = false})(FrameWork.HL.Get("@RoduxStore").store)
 FrameWork.HL.Call("@SoundHandler", "playSound", {
@@ -219,10 +198,6 @@ end
 --FrameWork.ModRanged("chargeOffDuration", 0.01)
 --FrameWork.ModRanged("speed", 350)
 
---=========================--
---       FLY SYSTEM        --
---=========================--
-
 local FlyEnabled = false
 
 UserInputService.InputBegan:Connect(function(input, processed)
@@ -264,9 +239,6 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
---=========================--
---         DESYNC          --
---=========================--
 
 UserInputService.InputBegan:Connect(function(Input, GameProcessed)
     if not GameProcessed and Input.KeyCode == getgenv().Keybinds.Desync then
@@ -291,9 +263,6 @@ UserInputService.InputBegan:Connect(function(Input, GameProcessed)
     end
 end)
 
---=========================--
---      FAST SPAWN LOOP    --
---=========================--
 
 if not getgenv().Loaded_FIN then
     RunService.RenderStepped:Connect(function()
@@ -303,9 +272,6 @@ if not getgenv().Loaded_FIN then
     end)
 end
 
---=========================--
---       EXECUTION FLAG    --
---=========================--
 
 getgenv().EXECUTED = true
 getgenv().Loaded_FIN = true
