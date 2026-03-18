@@ -1,7 +1,6 @@
 local Kalman = {}
 Kalman.__index = Kalman
 
-local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
@@ -15,6 +14,15 @@ function KalmanFilter.new()
     self.Q = Vector3.new(0.1, 0.1, 0.1)
     self.R = Vector3.new(0.1, 0.1, 0.1)
     self.K = Vector3.new(0, 0, 0)
+
+    self.LastPos = nil
+    self.LastVelocity = Vector3.new(0,0,0)
+
+    -- Noise State (smooth movement)
+    self.NoiseOffset = Vector3.new(0,0,0)
+    self.NoiseTarget = Vector3.new(0,0,0)
+    self.NoiseTimer = 0
+
     return self
 end
 
@@ -28,11 +36,13 @@ function KalmanFilter:update(Z)
         self.P.Y / (self.P.Y + self.R.Y),
         self.P.Z / (self.P.Z + self.R.Z)
     )
+
     self.X = self.X + Vector3.new(
         self.K.X * (Z.X - self.X.X),
         self.K.Y * (Z.Y - self.X.Y),
         self.K.Z * (Z.Z - self.X.Z)
     )
+
     self.P = Vector3.new(
         (1 - self.K.X) * self.P.X,
         (1 - self.K.Y) * self.P.Y,
@@ -42,53 +52,91 @@ end
 
 local KalmanFilters = {}
 
-local function DrawPredictionLine(Origin, Target, Color, Duration)
-    local Camera = Workspace.CurrentCamera
-    local Line = Drawing.new("Line")
-    Line.Thickness = 1.5
-    Line.Color = Color
-    Line.Transparency = 1
+local function UpdateNoise(Filter, dt)
+    Filter.NoiseTimer -= dt
 
-    coroutine.wrap(function()
-        local Start = tick()
-        while tick() - Start < Duration do
+    if Filter.NoiseTimer <= 0 then
+        -- neue Zielabweichung (klein!)
+        Filter.NoiseTarget = Vector3.new(
+            math.random(-100,100)/100,
+            math.random(-100,100)/100,
+            math.random(-100,100)/100
+        )
+        Filter.NoiseTimer = math.random(20,60)/100 -- 0.2–0.6s
+    end
 
-            local OriginPos = Camera:WorldToViewportPoint(Origin)
-            local TargetPos = Camera:WorldToViewportPoint(Target)
-                
-            Line.From = Vector2.new(OriginPos.X, OriginPos.Y)
-            Line.To = Vector2.new(TargetPos.X, TargetPos.Y)
-            Line.Visible = true
+    -- smooth interpolation
+    Filter.NoiseOffset = Filter.NoiseOffset:Lerp(Filter.NoiseTarget, dt * 5)
 
-            task.wait()
-        end
-        Line:Remove()
-    end)()
+    return Filter.NoiseOffset
 end
 
 function Kalman.Predict(Part, Origin, Speed, DrawLine, Gravity)
-    local Velocity = Part.AssemblyLinearVelocity
     Speed = Speed or 300
     Gravity = Gravity or Vector3.new(0, -196.2, 0)
 
-    local FlatTarget = Vector3.new(Part.Position.X, 0, Part.Position.Z)
-    local FlatOrigin = Vector3.new(Origin.X, 0, Origin.Z)
-    local HorizontalDistance = (FlatTarget - FlatOrigin).Magnitude
+    if not KalmanFilters[Part] then
+        KalmanFilters[Part] = KalmanFilter.new()
+    end
 
-    local TimeToHit = HorizontalDistance / Speed
+    local Filter = KalmanFilters[Part]
 
-    local PredictedFlat = FlatTarget + Vector3.new(Velocity.X, 0, Velocity.Z) * TimeToHit
+    -- Kalman smoothing
+    Filter:predict()
+    Filter:update(Part.Position)
 
+    local SmoothedPosition = Filter.X
+
+    -- bessere Velocity (nicht Roblox)
+    local dt = RunService.Heartbeat:Wait()
+
+    local LastPos = Filter.LastPos or SmoothedPosition
+    local Velocity = (SmoothedPosition - LastPos) / dt
+    Filter.LastPos = SmoothedPosition
+
+    local Distance = (SmoothedPosition - Origin).Magnitude
+    local TimeToHit = Distance / Speed 
+
+    local Predicted = SmoothedPosition + Velocity * TimeToHit
     local GravityOffset = 0.5 * Gravity * TimeToHit^2
 
     local AimPosition = Vector3.new(
-        PredictedFlat.X,
+        Predicted.X,
         Part.Position.Y - GravityOffset.Y,
-        PredictedFlat.Z
+        Predicted.Z
+    )
+
+    local Noise = UpdateNoise(Filter, dt)
+
+    local DistanceFactor = math.clamp(Distance / 100, 0.5, 3)
+
+    AimPosition += Vector3.new(
+        Noise.X * DistanceFactor,
+        Noise.Y * DistanceFactor,
+        Noise.Z * DistanceFactor
     )
 
     if DrawLine then
-        DrawPredictionLine(Origin, AimPosition, Color3.new(0, 1, 0), TimeToHit)
+        local Camera = Workspace.CurrentCamera
+        local Line = Drawing.new("Line")
+        Line.Thickness = 1.5
+        Line.Color = Color3.new(0, 1, 0)
+        Line.Transparency = 1
+
+        coroutine.wrap(function()
+            local Start = tick()
+            while tick() - Start < TimeToHit do
+                local o = Camera:WorldToViewportPoint(Origin)
+                local t = Camera:WorldToViewportPoint(AimPosition)
+
+                Line.From = Vector2.new(o.X, o.Y)
+                Line.To = Vector2.new(t.X, t.Y)
+                Line.Visible = true
+
+                task.wait()
+            end
+            Line:Remove()
+        end)()
     end
 
     return CFrame.lookAt(Origin, AimPosition)
