@@ -1,0 +1,471 @@
+--========================--
+
+-- Framework Load
+
+--========================--
+
+local FrameWork = loadstring(game:HttpGet(
+
+"https://raw.githubusercontent.com/SteineImGarten/FWL-CW-Module/refs/heads/main/Framework.lua"
+
+))()
+
+local Players = game:GetService("Players")
+
+local RunService = game:GetService("RunService")
+
+local UserInputService = game:GetService("UserInputService")
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local LocalPlayer = Players.LocalPlayer
+
+--========================--
+
+-- Globals
+
+--========================--
+
+getgenv().Repeat = 1
+
+getgenv().FallDamage = 22.6
+
+getgenv().InfiniteMode = true
+
+getgenv().TOGGLE_KEY = Enum.KeyCode.M
+
+getgenv().ACTIVE = false
+
+getgenv().CONNECTIONS = {}
+
+-- Movement / Timing
+
+getgenv().FALL_VELOCITY = -120
+
+getgenv().SPOOF_DURATION = 0.4
+
+getgenv().DAMAGE_DELAY = 0.2
+
+-- Teleport Offsets
+
+getgenv().BACK_OFFSET = 2
+
+getgenv().HEIGHT_OFFSET = -2.5
+
+getgenv().TARGET_PLAYERS = {
+
+--     "ugurqqqqqqq"
+
+}
+
+if getgenv().KamikazeLoaded then return end
+
+getgenv().KamikazeLoaded = true
+
+--========================--
+
+-- Framework Init
+
+--========================--
+
+FrameWork.HL.Debug(true)
+
+FrameWork.HL.Global(getgenv())
+
+FrameWork.HL.Folders({
+
+ReplicatedStorage.Client.Source,
+
+ReplicatedStorage.Shared.Source,
+
+ReplicatedStorage.Shared.Vendor
+
+})
+
+FrameWork.HL.Load()
+
+--========================--
+
+-- Network Hook
+
+--========================--
+
+FrameWork.HL.Hook("@Network", "FireServer", "FallHook", function(Original, ...)
+
+local Args = {...}
+
+if Args[2] == "StartFallDamage" or Args[2] == "TakeFallDamage" then
+
+    return
+
+end
+
+return Original(table.unpack(Args))
+
+end, { Spy = false })
+
+FrameWork.HL.Call(
+
+"@Network",
+
+"FireServer",
+
+FrameWork.HL.Get("@Network"),
+
+"StartFallDamage",
+
+{ BypassHook = true }
+
+)
+
+--========================--
+
+-- Utility
+
+--========================--
+
+local function GetClosestTarget()
+
+local char = LocalPlayer.Character
+
+local hrp = char and char:FindFirstChild("HumanoidRootPart")
+
+if not hrp then return end
+
+
+
+local closest, dist = nil, math.huge
+
+for _, plr in ipairs(Players:GetPlayers()) do
+
+    if plr ~= LocalPlayer then
+
+        -- Wenn die TARGET_PLAYERS Liste NICHT leer ist, nur die Spieler targeten, die drin stehen
+
+        if #getgenv().TARGET_PLAYERS == 0 or table.find(getgenv().TARGET_PLAYERS, plr.Name) then
+
+            local c = plr.Character
+
+            local r = c and c:FindFirstChild("HumanoidRootPart")
+
+            local h = c and c:FindFirstChildOfClass("Humanoid")
+
+            if r and h and h.Health > 0 then
+
+                local d = (r.Position - hrp.Position).Magnitude
+
+                if d < dist then
+
+                    dist = d
+
+                    closest = r
+
+                end
+
+            end
+
+        end
+
+    end
+
+end
+
+return closest
+
+end
+
+local function DisconnectAll()
+
+for _, c in ipairs(getgenv().CONNECTIONS) do
+
+    pcall(function() c:Disconnect() end)
+
+end
+
+table.clear(getgenv().CONNECTIONS)
+
+end
+
+local function RestoreHumanoidStates(hum)
+
+if hum then
+
+    pcall(function()
+
+        hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
+
+        hum:SetStateEnabled(Enum.HumanoidStateType.Climbing, true)
+
+        hum:SetStateEnabled(Enum.HumanoidStateType.Swimming, true)
+
+        hum:SetStateEnabled(Enum.HumanoidStateType.Landed, true)
+
+    end)
+
+end
+
+end
+
+local function StopAll(hum)
+
+getgenv().ACTIVE = false
+
+DisconnectAll()
+
+RestoreHumanoidStates(hum)
+
+end
+
+--========================--
+
+-- Core Routine
+
+--========================--
+
+local function StartRoutine()
+
+if getgenv().ACTIVE then return end
+
+getgenv().ACTIVE = true
+
+
+
+local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+
+local hrp = char:WaitForChild("HumanoidRootPart")
+
+local hum = char:WaitForChild("Humanoid")
+
+
+
+hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
+
+hum:SetStateEnabled(Enum.HumanoidStateType.Climbing, false)
+
+hum:SetStateEnabled(Enum.HumanoidStateType.Swimming, false)
+
+hum:SetStateEnabled(Enum.HumanoidStateType.Landed, false)
+
+
+
+local startTime = os.clock()
+
+
+
+if getgenv().InfiniteMode then
+
+    getgenv().CONNECTIONS[#getgenv().CONNECTIONS + 1] =
+
+        hum.Died:Connect(function()
+
+            StopAll(hum)
+
+        end)
+
+end
+
+
+
+--========================--
+
+-- TELEPORT (BASED ON *YOUR* LOOKVECTOR)
+
+--========================--
+
+
+
+getgenv().CONNECTIONS[#getgenv().CONNECTIONS + 1] =
+
+    RunService.RenderStepped:Connect(function()
+
+        if not getgenv().ACTIVE then return end
+
+        if not getgenv().InfiniteMode and os.clock() - startTime > getgenv().SPOOF_DURATION then return end
+
+
+
+        local target = GetClosestTarget()
+
+        if not target then return end
+
+
+
+        -- YOUR forward direction (horizontal only)
+
+        local forward = hrp.CFrame.LookVector
+
+        forward = Vector3.new(forward.X, 0, forward.Z)
+
+        if forward.Magnitude == 0 then return end
+
+        forward = forward.Unit
+
+
+
+        -- Position yourself BEHIND target along YOUR facing
+
+        local basePos = target.Position - (forward * getgenv().BACK_OFFSET)
+
+        local finalPos = basePos + Vector3.new(0, getgenv().HEIGHT_OFFSET, 0)
+
+
+
+        -- Face forward so target stays in front
+
+        hrp.CFrame = CFrame.lookAt(finalPos, finalPos + forward)
+
+    end)
+
+
+
+--========================--
+
+-- FORCE FALL VELOCITY
+
+--========================--
+
+
+
+getgenv().CONNECTIONS[#getgenv().CONNECTIONS + 1] =
+
+    RunService.Heartbeat:Connect(function()
+
+        if not getgenv().ACTIVE then return end
+
+        if not getgenv().InfiniteMode and os.clock() - startTime > getgenv().SPOOF_DURATION then return end
+
+
+
+        hum:ChangeState(Enum.HumanoidStateType.Freefall)
+
+        hrp.AssemblyLinearVelocity = Vector3.new(
+
+            hrp.AssemblyLinearVelocity.X,
+
+            getgenv().FALL_VELOCITY,
+
+            hrp.AssemblyLinearVelocity.Z
+
+        )
+
+    end)
+
+
+
+--========================--
+
+-- DAMAGE LOOP
+
+--========================--
+
+
+
+task.spawn(function()
+
+    while getgenv().ACTIVE do
+
+        if not getgenv().InfiniteMode then
+
+            task.wait(getgenv().DAMAGE_DELAY)
+
+        else
+
+            RunService.Heartbeat:Wait()
+
+        end
+
+
+
+        local reps = tonumber(getgenv().Repeat) or 1
+
+        if reps < 1 then reps = 1 end
+
+
+
+        for _ = 1, reps do
+
+            FrameWork.HL.Call(
+
+                "@Network",
+
+                "FireServer",
+
+                FrameWork.HL.Get("@Network"),
+
+                "TakeFallDamage",
+
+                getgenv().FallDamage,
+
+                Vector3.new(0, -1, 0),
+
+                hrp.Position,
+
+                false,
+
+                { BypassHook = true }
+
+            )
+
+        end
+
+
+
+        if not getgenv().InfiniteMode then
+
+            break
+
+        end
+
+    end
+
+end)
+
+
+
+if not getgenv().InfiniteMode then
+
+    task.delay(getgenv().SPOOF_DURATION, function()
+
+        StopAll(hum)
+
+    end)
+
+end
+
+end
+
+--========================--
+
+-- Input
+
+--========================--
+
+UserInputService.InputBegan:Connect(function(input, gp)
+
+if gp then return end
+
+if input.KeyCode ~= getgenv().TOGGLE_KEY then return end
+
+
+
+if getgenv().InfiniteMode then
+
+    StartRoutine()
+
+else
+
+    if getgenv().ACTIVE then
+
+        StopAll(LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid"))
+
+    else
+
+        StartRoutine()
+
+    end
+
+end
+
+end)
+
+make it NOT Tleport to players who have a Forcefield
