@@ -167,7 +167,7 @@ end, { Spy = false })
 -- Stamina Mods
 
 local DefaultStamina = FrameWork.HL.Call("@DefaultStaminaHandlerClient", "getDefaultStamina")
-FrameWork.HL.Call("@Stamina", "setBaseMaxStamina", DefaultStamina, 1500)
+FrameWork.HL.Call("@Stamina", "setBaseMaxStamina", DefaultStamina, 150)
 FrameWork.HL.Call("@Stamina", "setStamina", DefaultStamina, 1)
 
 DefaultStamina.gainDelay = 0.15
