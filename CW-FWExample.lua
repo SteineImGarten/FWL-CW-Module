@@ -177,6 +177,8 @@ print(DefaultStamina.gainDelay)
 print(DefaultStamina.gainPerSecond)
 DefaultStamina.gainDelay = 0.25
 DefaultStamina.gainPerSecond = 35
+print(DefaultStamina.gainDelay)
+print(DefaultStamina.gainPerSecond)
 
 --FrameWork.HL.Hook("@DefaultStaminaHandlerClient", "spendStamina", "ConfigMaxed", function(Original, Stamina)
 --    Stamina = 110
