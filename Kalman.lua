@@ -9,6 +9,7 @@ KalmanFilter.__index = KalmanFilter
 
 function KalmanFilter.new()
     local self = setmetatable({}, KalmanFilter)
+
     self.X = Vector3.new(0, 0, 0)
     self.P = Vector3.new(1, 1, 1)
     self.Q = Vector3.new(0.1, 0.1, 0.1)
@@ -16,9 +17,8 @@ function KalmanFilter.new()
     self.K = Vector3.new(0, 0, 0)
 
     self.LastPos = nil
-    self.LastVelocity = Vector3.new(0,0,0)
 
-    -- Noise State (smooth movement)
+    -- Smooth Noise State
     self.NoiseOffset = Vector3.new(0,0,0)
     self.NoiseTarget = Vector3.new(0,0,0)
     self.NoiseTimer = 0
@@ -52,11 +52,11 @@ end
 
 local KalmanFilters = {}
 
+-- Smooth human-like noise (stable drifting)
 local function UpdateNoise(Filter, dt)
     Filter.NoiseTimer -= dt
 
     if Filter.NoiseTimer <= 0 then
-        -- neue Zielabweichung (klein!)
         Filter.NoiseTarget = Vector3.new(
             math.random(-100,100)/100,
             math.random(-100,100)/100,
@@ -65,10 +65,32 @@ local function UpdateNoise(Filter, dt)
         Filter.NoiseTimer = math.random(20,60)/100 -- 0.2–0.6s
     end
 
-    -- smooth interpolation
     Filter.NoiseOffset = Filter.NoiseOffset:Lerp(Filter.NoiseTarget, dt * 5)
 
     return Filter.NoiseOffset
+end
+
+local function DrawPredictionLine(Origin, Target, Color, Duration)
+    local Camera = Workspace.CurrentCamera
+    local Line = Drawing.new("Line")
+    Line.Thickness = 1.5
+    Line.Color = Color
+    Line.Transparency = 1
+
+    coroutine.wrap(function()
+        local Start = tick()
+        while tick() - Start < Duration do
+            local OriginPos = Camera:WorldToViewportPoint(Origin)
+            local TargetPos = Camera:WorldToViewportPoint(Target)
+
+            Line.From = Vector2.new(OriginPos.X, OriginPos.Y)
+            Line.To = Vector2.new(TargetPos.X, TargetPos.Y)
+            Line.Visible = true
+
+            task.wait()
+        end
+        Line:Remove()
+    end)()
 end
 
 function Kalman.Predict(Part, Origin, Speed, DrawLine, Gravity)
@@ -87,16 +109,18 @@ function Kalman.Predict(Part, Origin, Speed, DrawLine, Gravity)
 
     local SmoothedPosition = Filter.X
 
-    -- bessere Velocity (nicht Roblox)
+    -- bessere Velocity
     local dt = RunService.Heartbeat:Wait()
 
     local LastPos = Filter.LastPos or SmoothedPosition
     local Velocity = (SmoothedPosition - LastPos) / dt
     Filter.LastPos = SmoothedPosition
 
+    -- bessere Flugzeit
     local Distance = (SmoothedPosition - Origin).Magnitude
-    local TimeToHit = Distance / Speed 
+    local TimeToHit = Distance / Speed
 
+    -- Prediction
     local Predicted = SmoothedPosition + Velocity * TimeToHit
     local GravityOffset = 0.5 * Gravity * TimeToHit^2
 
@@ -108,35 +132,22 @@ function Kalman.Predict(Part, Origin, Speed, DrawLine, Gravity)
 
     local Noise = UpdateNoise(Filter, dt)
 
-    local DistanceFactor = math.clamp(Distance / 100, 0.5, 3)
+    -- weniger vertikales Verfehlen (realistischer)
+    Noise = Vector3.new(Noise.X, Noise.Y * 0.5, Noise.Z)
 
-    AimPosition += Vector3.new(
-        Noise.X * DistanceFactor,
-        Noise.Y * DistanceFactor,
-        Noise.Z * DistanceFactor
+    local Size = Part.Size * 0.5
+    local NoiseStrength = 0.15 -- fein justiert
+
+    local Offset = Vector3.new(
+        Noise.X * Size.X * NoiseStrength,
+        Noise.Y * Size.Y * NoiseStrength,
+        Noise.Z * Size.Z * NoiseStrength
     )
 
+    AimPosition += Offset
+
     if DrawLine then
-        local Camera = Workspace.CurrentCamera
-        local Line = Drawing.new("Line")
-        Line.Thickness = 1.5
-        Line.Color = Color3.new(0, 1, 0)
-        Line.Transparency = 1
-
-        coroutine.wrap(function()
-            local Start = tick()
-            while tick() - Start < TimeToHit do
-                local o = Camera:WorldToViewportPoint(Origin)
-                local t = Camera:WorldToViewportPoint(AimPosition)
-
-                Line.From = Vector2.new(o.X, o.Y)
-                Line.To = Vector2.new(t.X, t.Y)
-                Line.Visible = true
-
-                task.wait()
-            end
-            Line:Remove()
-        end)()
+        DrawPredictionLine(Origin, AimPosition, Color3.new(0, 1, 0), TimeToHit)
     end
 
     return CFrame.lookAt(Origin, AimPosition)
