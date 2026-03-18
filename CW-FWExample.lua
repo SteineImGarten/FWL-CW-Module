@@ -8,9 +8,6 @@ local Workspace = game:GetService("Workspace")
 
 local LocalPlayer = Players.LocalPlayer
 
-LocalPlayer:Kick("Banned\nReason: Exploiting")
-
-
 local Camera = Workspace.CurrentCamera
 
 getgenv().RecentParryPlayers = getgenv().RecentParryPlayers or {}
