@@ -159,10 +159,10 @@ FrameWork.HL.Call("@Stamina", "setStamina", DefaultStamina, 1)
 DefaultStamina.gainDelay = 0.5
 DefaultStamina.gainPerSecond = 50
 
-FrameWork.HL.Hook("@DefaultStaminaHandlerClient", "spendStamina", "ConfigMaxed", function(Original, Stamina)
-    Stamina = 1
-    return Original(Stamina)
-end)
+--FrameWork.HL.Hook("@DefaultStaminaHandlerClient", "spendStamina", "ConfigMaxed", function(Original, Stamina)
+--    Stamina = 110
+--    return Original(Stamina)
+--end)
 
 UserInputService.InputBegan:Connect(function(Input, GameProcessed)
     if not GameProcessed and Input.KeyCode == getgenv().Keybinds.Desync then
