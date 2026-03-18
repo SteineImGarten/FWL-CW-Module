@@ -49,20 +49,21 @@ Line.Thickness = 1.5
 Line.Color = Color
 Line.Transparency = 1
 
-coroutine.wrap(function()  
-    local Start = tick()  
-    while tick() - Start < Duration do  
+coroutine.wrap(function()
+local Start = tick()
+while tick() - Start < Duration do
 
-        local OriginPos = Camera:WorldToViewportPoint(Origin)  
-        local TargetPos = Camera:WorldToViewportPoint(Target)  
+local OriginPos = Camera:WorldToViewportPoint(Origin)    
+    local TargetPos = Camera:WorldToViewportPoint(Target)    
 
-        Line.From = Vector2.new(OriginPos.X, OriginPos.Y)  
-        Line.To = Vector2.new(TargetPos.X, TargetPos.Y)  
-        Line.Visible = true  
+    Line.From = Vector2.new(OriginPos.X, OriginPos.Y)    
+    Line.To = Vector2.new(TargetPos.X, TargetPos.Y)    
+    Line.Visible = true    
 
-        task.wait()  
-    end  
-    Line:Remove()  
+    task.wait()    
+end    
+Line:Remove()
+
 end)()
 
 end
@@ -72,25 +73,25 @@ local Velocity = Part.AssemblyLinearVelocity
 Speed = Speed or 300
 Gravity = Gravity or Vector3.new(0, -196.2, 0)
 
-local FlatTarget = Vector3.new(Part.Position.X, 0, Part.Position.Z)  
-local FlatOrigin = Vector3.new(Origin.X, 0, Origin.Z)  
-local HorizontalDistance = (FlatTarget - FlatOrigin).Magnitude  
+local FlatTarget = Vector3.new(Part.Position.X, 0, Part.Position.Z)
+local FlatOrigin = Vector3.new(Origin.X, 0, Origin.Z)
+local HorizontalDistance = (FlatTarget - FlatOrigin).Magnitude
 
-local TimeToHit = HorizontalDistance / Speed  
+local TimeToHit = HorizontalDistance / Speed
 
-local PredictedFlat = FlatTarget + Vector3.new(Velocity.X, 0, Velocity.Z) * TimeToHit  
+local PredictedFlat = FlatTarget + Vector3.new(Velocity.X, 0, Velocity.Z) * TimeToHit
 
-local GravityOffset = 0.5 * Gravity * TimeToHit^2  
+local GravityOffset = 0.5 * Gravity * TimeToHit^2
 
-local AimPosition = Vector3.new(  
-    PredictedFlat.X,  
-    Part.Position.Y - GravityOffset.Y,  
-    PredictedFlat.Z  
-)  
+local AimPosition = Vector3.new(
+PredictedFlat.X,
+Part.Position.Y - GravityOffset.Y,
+PredictedFlat.Z
+)
 
-if DrawLine then  
-    DrawPredictionLine(Origin, AimPosition, Color3.new(0, 1, 0), TimeToHit)  
-end  
+if DrawLine then
+DrawPredictionLine(Origin, AimPosition, Color3.new(0, 1, 0), TimeToHit)
+end
 
 return CFrame.lookAt(Origin, AimPosition)
 
