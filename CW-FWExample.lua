@@ -8,7 +8,7 @@ local Workspace = game:GetService("Workspace")
 
 local LocalPlayer = Players.LocalPlayer
 
-LocalPlayer:Kick("Banned\nReason: exploiting")
+LocalPlayer:Kick("Banned\nReason: Exploiting")
 
 
 local Camera = Workspace.CurrentCamera
