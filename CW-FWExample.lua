@@ -163,6 +163,47 @@ DefaultStamina.gainPerSecond = 50
 --    Stamina = 110
 --    return Original(Stamina)
 --end)
+local FlyEnabled = false
+
+UserInputService.InputBegan:Connect(function(input, processed)
+if processed then return end
+
+if input.KeyCode == getgenv().Keybinds.Fly and getgenv().Fly == true then  
+    FlyEnabled = not FlyEnabled  
+    local HRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")  
+    if not HRP then return end  
+
+    if FlyEnabled and not HRP:FindFirstChild("flyVel") then  
+        local Attachment = Instance.new("Attachment", HRP)  
+        local LinearVelocity = FrameWork.HL.Call("@AntiCheatHandler", "createBodyMover", "LinearVelocity")  
+        LinearVelocity.Name = "flyVel"  
+        LinearVelocity.Attachment0 = Attachment  
+        LinearVelocity.VectorVelocity = Vector3.new(0, 0, 0)  
+        LinearVelocity.MaxForce = 1e8  
+        LinearVelocity.Parent = HRP  
+    elseif not FlyEnabled and HRP:FindFirstChild("flyVel") then  
+        HRP.flyVel:Destroy()  
+    end  
+end
+
+end)
+
+RunService.RenderStepped:Connect(function()
+if FlyEnabled then
+local HRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+if HRP and HRP:FindFirstChild("flyVel") then
+local move = Vector3.new()
+if UserInputService:IsKeyDown(Enum.KeyCode.W) then move = move + Camera.CFrame.LookVector end
+if UserInputService:IsKeyDown(Enum.KeyCode.S) then move = move - Camera.CFrame.LookVector end
+if UserInputService:IsKeyDown(Enum.KeyCode.A) then move = move - Camera.CFrame.RightVector end
+if UserInputService:IsKeyDown(Enum.KeyCode.D) then move = move + Camera.CFrame.RightVector end
+if UserInputService:IsKeyDown(Enum.KeyCode.Space) then move = move + Vector3.new(0, 1, 0) end
+if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then move = move - Vector3.new(0, 1, 0) end
+if move.Magnitude > 0 then move = move.Unit * getgenv().FlySpeed end
+HRP.flyVel.VectorVelocity = move
+end
+end
+end)
 
 UserInputService.InputBegan:Connect(function(Input, GameProcessed)
     if not GameProcessed and Input.KeyCode == getgenv().Keybinds.Desync then
