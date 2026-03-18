@@ -67,46 +67,24 @@ FrameWork.HL.Hook("@RangedWeaponClient", "cancelReload", "SilentAimCancel", func
     end
 end, { Spy = false })
 
-FrameWork.HL.Hook("@RangedWeaponHandler", "calculateFireDirection", "SilentAim", function(Original, ...)
-    local Ranged, MetaData = FrameWork.RangedWeapon()
-    local Args = {...}
+FrameWork.HL.Hook(
+    "@RangedWeaponHandler",
+    "calculateFireDirection",
+    "SilentAim",
+    function(Original, ...)
+        local Ranged, MetaData = FrameWork.RangedWeapon()
+        local Args = { ... }
 
-    if typeof(Args[1]) == "CFrame" and getgenv().SilentAim == true then
-        local Speed = MetaData._itemConfig.speed
-        local Gravity = MetaData._itemConfig.gravity
-        local Origin = LocalPlayer.Character.HumanoidRootPart.Position
+        if typeof(Args[1]) == "CFrame" and getgenv().SilentAim == true then
+            local Speed = MetaData._itemConfig.speed
+            local Gravity = MetaData._itemConfig.gravity
+            local Origin = LocalPlayer.Character.HumanoidRootPart.Position
 
-        local Target = FrameWork.MouseTarget(nil, getgenv().FOV)
+            local Target = FrameWork.MouseTarget(nil, getgenv().FOV)
 
-        if Target and Target.Character then
-            local Character = Target.Character
-
-            local Parts = {
-                "Torso",
-                "Left Arm",
-                "Right Arm",
-                "Left Leg",
-                "Right Leg"
-            }
-
-            local ValidParts = {}
-            for _, PartName in ipairs(Parts) do
-                local Part = Character:FindFirstChild(PartName)
-                if Part then
-                    table.insert(ValidParts, Part)
-                end
-            end
-
-            local ChosenPart
-            if #ValidParts > 0 then
-                ChosenPart = ValidParts[math.random(1, #ValidParts)]
-            else
-                ChosenPart = Character:FindFirstChild("Torso")
-            end
-
-            if ChosenPart then
+            if Target then
                 Args[1] = FrameWork.Kalman.Predict(
-                    ChosenPart,
+                    Target.Character:FindFirstChild(getgenv().HitPart),
                     Origin,
                     Speed,
                     false,
@@ -114,10 +92,11 @@ FrameWork.HL.Hook("@RangedWeaponHandler", "calculateFireDirection", "SilentAim",
                 )
             end
         end
-    end
 
-    return Original(table.unpack(Args))
-end, { Spy = false })
+        return Original(table.unpack(Args))
+    end,
+    { Spy = false }
+)
 
 FrameWork.HL.Hook("@MeleeWeaponClient", "onSlashRayHit", "RangeExpander", function(Original, ...)
     local Args = {...}
