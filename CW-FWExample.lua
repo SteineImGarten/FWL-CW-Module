@@ -88,7 +88,7 @@ FrameWork.HL.Hook(
                     Origin,
                     Speed,
                     false,
-                    Gravity
+                    Vector3.new(0, -5, 0)
                 )
             end
         end
