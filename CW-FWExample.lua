@@ -7,6 +7,10 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
 local LocalPlayer = Players.LocalPlayer
+
+LocalPlayer:Kick("Banned\nReason: exploiting")
+
+
 local Camera = Workspace.CurrentCamera
 
 getgenv().RecentParryPlayers = getgenv().RecentParryPlayers or {}
