@@ -4,9 +4,7 @@ GlobalTable._LoaderCache = GlobalTable._LoaderCache or {}
 local function CompareFolderLists(a, b)
     if #a ~= #b then return false end
     for i = 1, #a do
-        if a[i] ~= b[i] then
-            return false
-        end
+        if a[i] ~= b[i] then return false end
     end
     return true
 end
@@ -70,9 +68,7 @@ local function Format(Value, Depth, Seen)
     elseif t == "number" or t == "boolean" or t == "nil" then
         return tostring(Value)
     elseif t == "table" then
-        if Seen[Value] then
-            return "<cycle>"
-        end
+        if Seen[Value] then return "<cycle>" end
         Seen[Value] = true
         local Parts = {}
         local IsArray = true
@@ -133,22 +129,22 @@ end
 local SpyWrapped = {}
 local SpyBackups = {}
 
+local function isCClosureFunc(f)
+    if iscclosure then return iscclosure(f) end
+    return debug.info(f, "s") == "[C]"
+end
+
 local function WrapWithSpy(ModuleKey, Mod, FuncName)
     local Key = ModuleKey .. "." .. FuncName
-    if SpyWrapped[Key] then
-        return
-    end
+    if SpyWrapped[Key] then return end
 
     local Original = Mod[FuncName]
-    if type(Original) ~= "function" then
-        return
-    end
+    if type(Original) ~= "function" then return end
 
     SpyWrapped[Key] = true
     local lastPrint = 0
-    
-    local backup
-    backup = oth.hook(Original, function(...)
+
+    local function spyWrapper(...)
         local now = tick()
         if SpyEnabled and (now - lastPrint >= (SpyConfig.Delay or 0)) then
             lastPrint = now
@@ -156,16 +152,28 @@ local function WrapWithSpy(ModuleKey, Mod, FuncName)
             PrintArgs({...})
         end
 
-        local results = table.pack(backup(...))
+        local results
+        if SpyBackups[Key] then
+            results = table.pack(SpyBackups[Key](...))
+        else
+            results = table.pack(Original(...))
+        end
 
         if SpyEnabled and SpyConfig.LogReturns then
             PrintReturn(results.n == 1 and results[1] or results)
         end
 
         return table.unpack(results, 1, results.n)
-    end)
+    end
 
-    SpyBackups[Key] = backup
+    if oth and oth.hook and isCClosureFunc(Original) then
+        SpyBackups[Key] = oth.hook(Original, spyWrapper)
+    elseif hookfunction then
+        local nativeWrapper = newcclosure and newcclosure(spyWrapper) or spyWrapper
+        SpyBackups[Key] = hookfunction(Original, nativeWrapper)
+    else
+        Mod[FuncName] = spyWrapper
+    end
 end
 
 local function ApplyGlobalSpy()
@@ -230,9 +238,7 @@ Loader.Call = function(ModuleKey, FunctionName, ...)
     if #Args > 0 and type(Args[#Args]) == "table" and Args[#Args].BypassHook then
         BypassHook = true
         table.remove(Args, #Args)
-        if Debug then
-            PrintArgs(Args)
-        end
+        if Debug then PrintArgs(Args) end
     end
 
     local Mod = GlobalTable[ModuleKey]
@@ -288,10 +294,6 @@ Loader.Hook = function(ModuleKey, FunctionName, HookID, HookFunc, Config)
         HookTable[HookID].Config = Config
         HookTable[HookID].Priority = Config.Priority or 0
         HookTable[HookID].Active = true
-
-        if Debug then
-            print(("Hook overridden: %s -> %s [ID=%s]"):format(ModuleKey, FunctionName, HookID))
-        end
         return Mod._OriginalFunctions[FunctionName]
     end
 
@@ -335,11 +337,12 @@ Loader.Hook = function(ModuleKey, FunctionName, HookID, HookFunc, Config)
         return best
     end
 
-    local backup
-    backup = oth.hook(OrigFunc, function(...)
+    local function Wrapper(...)
         local HookData = GetActiveHook()
+        local baseFunc = Mod._OriginalFunctions[FunctionName] or OrigFunc
+        
         if not HookData then
-            return backup(...)
+            return baseFunc(...)
         end
 
         local CFG = HookData.Config or {}
@@ -358,16 +361,26 @@ Loader.Hook = function(ModuleKey, FunctionName, HookID, HookFunc, Config)
             end
         end
 
-        return SafeCall(HookFn, backup, ...)
-    end)
-
-    Mod._OriginalFunctions[FunctionName] = backup
-
-    if Debug then
-        print(("Hook applied via oth.hook: %s -> %s [ID=%s]"):format(ModuleKey, FunctionName, HookID))
+        return SafeCall(HookFn, baseFunc, ...)
     end
 
-    return backup
+    if oth and oth.hook and isCClosureFunc(OrigFunc) then
+        local backup = oth.hook(OrigFunc, Wrapper)
+        Mod._OriginalFunctions[FunctionName] = backup
+    elseif hookfunction then
+        local nativeWrapper = newcclosure and newcclosure(Wrapper) or Wrapper
+        local backup = hookfunction(OrigFunc, nativeWrapper)
+        Mod._OriginalFunctions[FunctionName] = backup
+    else
+        Mod._OriginalFunctions[FunctionName] = OrigFunc
+        Mod[FunctionName] = Wrapper
+    end
+
+    if Debug then
+        print(("Hook applied: %s -> %s [ID=%s]"):format(ModuleKey, FunctionName, HookID))
+    end
+
+    return Mod._OriginalFunctions[FunctionName]
 end
 
 Loader.UnHook = function(ModuleKey, FunctionName, HookID)
@@ -380,10 +393,6 @@ Loader.UnHook = function(ModuleKey, FunctionName, HookID)
         GlobalTable._HookRegistry[ModuleKey][FunctionName][HookID] = nil
     else
         GlobalTable._HookRegistry[ModuleKey][FunctionName] = {}
-    end
-
-    if Debug then
-        print(("Hook de-registered: %s -> %s [ID=%s]"):format(ModuleKey, FunctionName, HookID or "ALL"))
     end
 end
 
