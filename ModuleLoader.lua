@@ -1,5 +1,3 @@
-setthreadidentity(2)
-
 local GlobalTable = getgenv()
 GlobalTable._LoaderCache = GlobalTable._LoaderCache or {}
 
@@ -14,7 +12,6 @@ local function CompareFolderLists(a, b)
 end
 
 local Loader = {}
-
 local Folders = {}
 
 for _, CacheEntry in ipairs(GlobalTable._LoaderCache) do
@@ -49,7 +46,6 @@ Loader.Global = function(Table)
 end
 
 local function Safe(Module)
-
     local Ok, Result = pcall(require, Module)
     if not Ok then
         if Debug then
@@ -60,7 +56,6 @@ local function Safe(Module)
     if typeof(Result) ~= "table" then
         return {}
     end
-
     return Result
 end
 
@@ -69,6 +64,7 @@ local function Format(Value, Depth, Seen)
     Seen = Seen or {}
     local Indent = string.rep("  ", Depth)
     local t = typeof(Value)
+    
     if t == "string" then
         return ("\"%s\""):format(Value:gsub("\n","\\n"))
     elseif t == "number" or t == "boolean" or t == "nil" then
@@ -81,6 +77,7 @@ local function Format(Value, Depth, Seen)
         local Parts = {}
         local IsArray = true
         local MaxIndex = 0
+        
         for k, _ in pairs(Value) do
             if type(k) ~= "number" then
                 IsArray = false
@@ -89,17 +86,14 @@ local function Format(Value, Depth, Seen)
                 if k > MaxIndex then MaxIndex = k end
             end
         end
+        
         if IsArray and MaxIndex > 0 then
-            
             table.insert(Parts, "[")
-            
             for i = 1, MaxIndex do
                 local v = Value[i]
                 table.insert(Parts, ("\n%s  %s,"):format(Indent, Format(v, Depth+1, Seen)))
             end
-            
             table.insert(Parts, ("\n%s]"):format(Indent))
-            
             return table.concat(Parts, "")
         else
             table.insert(Parts, "{")
@@ -108,9 +102,7 @@ local function Format(Value, Depth, Seen)
                 local ValSTR = Format(v, Depth+1, Seen)
                 table.insert(Parts, ("\n%s  %s = %s,"):format(Indent, KeySTR, ValSTR))
             end
-            
             table.insert(Parts, ("\n%s}"):format(Indent))
-            
             return table.concat(Parts, "")
         end
     else
@@ -125,11 +117,7 @@ local function PrintArgs(Args)
         if t == "table" then
             print(("Arg%d: %s = %s"):format(i, "table", Format(v, 0, {})))
         else
-            if t == "string" then
-                print(("Arg%d: %s = %s"):format(i, t, Format(v)))
-            else
-                print(("Arg%d: %s = %s"):format(i, t, Format(v)))
-            end
+            print(("Arg%d: %s = %s"):format(i, t, Format(v)))
         end
     end
 end
@@ -143,9 +131,11 @@ local function PrintReturn(Ret)
 end
 
 local SpyWrapped = {}
+local SpyBackups = {}
 
 local function WrapWithSpy(ModuleKey, Mod, FuncName)
-    if SpyWrapped[ModuleKey.."."..FuncName] then
+    local Key = ModuleKey .. "." .. FuncName
+    if SpyWrapped[Key] then
         return
     end
 
@@ -154,27 +144,28 @@ local function WrapWithSpy(ModuleKey, Mod, FuncName)
         return
     end
 
-    SpyWrapped[ModuleKey.."."..FuncName] = true
-
+    SpyWrapped[Key] = true
     local lastPrint = 0
-
-    Mod[FuncName] = function(...)
+    
+    local backup
+    backup = oth.hook(Original, function(...)
         local now = tick()
         if SpyEnabled and (now - lastPrint >= (SpyConfig.Delay or 0)) then
             lastPrint = now
-
             print(("=== [SPY] %s -> %s ==="):format(ModuleKey, FuncName))
             PrintArgs({...})
         end
 
-        local results = {Original(...)}
+        local results = table.pack(backup(...))
 
         if SpyEnabled and SpyConfig.LogReturns then
-            PrintReturn(#results == 1 and results[1] or results)
+            PrintReturn(results.n == 1 and results[1] or results)
         end
 
-        return table.unpack(results)
-    end
+        return table.unpack(results, 1, results.n)
+    end)
+
+    SpyBackups[Key] = backup
 end
 
 local function ApplyGlobalSpy()
@@ -202,7 +193,6 @@ Loader.Spy = function(State, Config)
 end
 
 Loader.Load = function()
-
     local Mods = {}
     for _, Folder in ipairs(Folders) do
         for _, Module in ipairs(Folder:GetDescendants()) do
@@ -230,20 +220,17 @@ Loader.Load = function()
     end
 
     getgenv().LOAD_FINISHED = true
-    
     return Mods
 end
 
 Loader.Call = function(ModuleKey, FunctionName, ...)
-
     local Args = {...}
     local BypassHook = false
 
     if #Args > 0 and type(Args[#Args]) == "table" and Args[#Args].BypassHook then
         BypassHook = true
         table.remove(Args, #Args)
-        
-        if Debug or true then
+        if Debug then
             PrintArgs(Args)
         end
     end
@@ -270,7 +257,6 @@ Loader.Call = function(ModuleKey, FunctionName, ...)
 end
 
 Loader.Hook = function(ModuleKey, FunctionName, HookID, HookFunc, Config)
-    
     if type(HookFunc) ~= "function" and type(HookID) == "function" then
         HookFunc, Config = HookID, HookFunc
         HookID = "Default"
@@ -291,15 +277,9 @@ Loader.Hook = function(ModuleKey, FunctionName, HookID, HookFunc, Config)
         return nil
     end
 
-    Mod._OriginalFunctions = Mod._OriginalFunctions or {}
-    if not Mod._OriginalFunctions[FunctionName] then
-        Mod._OriginalFunctions[FunctionName] = OrigFunc
-    end
-
     GlobalTable._HookRegistry = GlobalTable._HookRegistry or {}
     GlobalTable._HookRegistry[ModuleKey] = GlobalTable._HookRegistry[ModuleKey] or {}
-    GlobalTable._HookRegistry[ModuleKey][FunctionName] =
-        GlobalTable._HookRegistry[ModuleKey][FunctionName] or {}
+    GlobalTable._HookRegistry[ModuleKey][FunctionName] = GlobalTable._HookRegistry[ModuleKey][FunctionName] or {}
 
     local HookTable = GlobalTable._HookRegistry[ModuleKey][FunctionName]
 
@@ -310,10 +290,8 @@ Loader.Hook = function(ModuleKey, FunctionName, HookID, HookFunc, Config)
         HookTable[HookID].Active = true
 
         if Debug then
-            print(("Hook overridden: %s -> %s [ID=%s]")
-                :format(ModuleKey, FunctionName, HookID))
+            print(("Hook overridden: %s -> %s [ID=%s]"):format(ModuleKey, FunctionName, HookID))
         end
-
         return Mod._OriginalFunctions[FunctionName]
     end
 
@@ -325,6 +303,7 @@ Loader.Hook = function(ModuleKey, FunctionName, HookID, HookFunc, Config)
         Priority = Config.Priority or 0
     }
 
+    Mod._OriginalFunctions = Mod._OriginalFunctions or {}
     Mod._HookWrapped = Mod._HookWrapped or {}
 
     if Mod._HookWrapped[FunctionName] then
@@ -356,10 +335,11 @@ Loader.Hook = function(ModuleKey, FunctionName, HookID, HookFunc, Config)
         return best
     end
 
-    local function Wrapper(...)
+    local backup
+    backup = oth.hook(OrigFunc, function(...)
         local HookData = GetActiveHook()
         if not HookData then
-            return SafeCall(Mod._OriginalFunctions[FunctionName], ...)
+            return backup(...)
         end
 
         local CFG = HookData.Config or {}
@@ -373,25 +353,21 @@ Loader.Hook = function(ModuleKey, FunctionName, HookID, HookFunc, Config)
 
             if now - LastSpyPrintTime[key] >= delay then
                 LastSpyPrintTime[key] = now
-
-                print(("--- Spy Hook: %s -> %s [ID=%s] ---")
-                    :format(ModuleKey, FunctionName, HookData.HookID))
-
+                print(("--- Spy Hook: %s -> %s [ID=%s] ---"):format(ModuleKey, FunctionName, HookData.HookID))
                 PrintArgs({...})
             end
         end
 
-        return SafeCall(HookFn, Mod._OriginalFunctions[FunctionName], ...)
-    end
+        return SafeCall(HookFn, backup, ...)
+    end)
 
-    Mod[FunctionName] = Wrapper
+    Mod._OriginalFunctions[FunctionName] = backup
 
     if Debug then
-        print(("Hook applied: %s -> %s [ID=%s]")
-            :format(ModuleKey, FunctionName, HookID))
+        print(("Hook applied via oth.hook: %s -> %s [ID=%s]"):format(ModuleKey, FunctionName, HookID))
     end
 
-    return Mod._OriginalFunctions[FunctionName]
+    return backup
 end
 
 Loader.UnHook = function(ModuleKey, FunctionName, HookID)
@@ -406,26 +382,8 @@ Loader.UnHook = function(ModuleKey, FunctionName, HookID)
         GlobalTable._HookRegistry[ModuleKey][FunctionName] = {}
     end
 
-    local ActiveHook
-    for _, HookData in pairs(GlobalTable._HookRegistry[ModuleKey][FunctionName] or {}) do
-        if HookData.Active then
-            ActiveHook = HookData.Func
-            break
-        end
-    end
-
-    if ActiveHook then
-        local Original = Mod._OriginalFunctions[FunctionName]
-        Mod[FunctionName] = function(...)
-
-            return ActiveHook(Original, ...)
-        end
-    else
-        Mod[FunctionName] = Mod._OriginalFunctions[FunctionName]
-    end
-
     if Debug then
-        print(("Hook removed: %s -> %s [ID=%s]"):format(ModuleKey, FunctionName, HookID or "ALL"))
+        print(("Hook de-registered: %s -> %s [ID=%s]"):format(ModuleKey, FunctionName, HookID or "ALL"))
     end
 end
 
@@ -462,7 +420,6 @@ Loader.ShowFunc = function(FuncName)
     for Key, Mod in pairs(GlobalTable) do
         if type(Key) == "string" and Key:sub(1, 1) == "@" then
             Searched += 1
-
             local Ok, HasFunc = pcall(function()
                 return type(Mod) == "table" and typeof(Mod[FuncName]) == "function"
             end)
@@ -491,8 +448,8 @@ Loader.Get = function(Name)
         return nil
     end
 
-    local GlobalTable = getgenv()
-    local Mod = GlobalTable[Name] or GlobalTable["@" .. Name]
+    local Env = getgenv()
+    local Mod = Env[Name] or Env["@" .. Name]
 
     if not Mod then
         warn(("Module not found: %s"):format(Name))
@@ -503,7 +460,6 @@ Loader.Get = function(Name)
 end
 
 GlobalTable.HookLoader = Loader
-
 table.insert(GlobalTable._LoaderCache, {Folders = Folders, Loader = Loader})
 
 return Loader
